@@ -6,27 +6,28 @@ Python-based CLI for processing of a scraping language in pseudo-code
 Once installed via Sublime Text's **Package Control**, files with the extension `.tsl` will automatically get **syntax-highlighting** and a **build system**. Force building by choosing **`Tools > Build System > TSL`** from the ST3 menu.
 
 ## Example:
-```fortran
-{
-  in runner/all_utterances.txt 
-    find all "dateTime"
-    take lines as dateTimeLines
-    remove lines
-    save as runner/cleaned_utterances.txt
+![Sublime Text Syntax Highlighting](https://raw.githubusercontent.com/polygoat/TSL/master/preview.png "Sublime Text Syntax Highlighting")
 
-  in runner/dateTime_utterances.txt
-    empty
-    write dateTimeLines
-}
-```
 ... This will read all lines from `runner/all_utterances.txt`, find all occurences of the string `"dateTime"`, take those lines, remove them and save all lines in `runner/cleaned_utterances`. The removed lines will be stored in `runner/dateTime_utterances.txt` instead, which is cleared out beforehand.
+
+---
+# Index
+### [How does it work?](#how-does-it-work)
+### [Prerequisites](#prerequisites)
+### [Available Commands](#available-commands)
+### [Templating](#templating)
+---
+# How does it work?
+TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. 
+Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
+
+A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context.
 
 ---
 # Prerequisites
 You need Python >= 3 installed to run TSL scripts.
-
 ---
-# Available commands
+# Available Commands
 
 ## File operations
 
@@ -41,11 +42,22 @@ You need Python >= 3 installed to run TSL scripts.
 
 ### in *`<path/to/textfile.txt>`*
 *Opens up a file and reads all its lines. You can log the lines using `log line`
-All future file operations are refering to this one until your next "in" statement.*
+All future file operations are refering to this one until your next "in" statement.
+You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
     in myFiles/utterances.txt
+```
+
+### in *`<path/to/folder>`*
+*Creates the nested directory structure if it doesn't exist. Otherwise, the path will be used as context for future operations.*
+
+**Example:**
+```fortran
+    in "/Sublime Text/Packages"
+        count files as fileCount
+        log fileCount
 ```
 
 ### save `[as <filepath>]`
@@ -85,7 +97,7 @@ All future file operations are refering to this one until your next "in" stateme
 ```
 
 ### select from *`<string | RegEx | int>`* to *`<string | RegEx | int>`*
-*Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number*
+*Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number. Note that we start counting with 1 to keep it natural*
 
 **Example:**
 ```fortran
@@ -189,7 +201,7 @@ Example:
 
 *Sorts either the supplied or last referenced collection alphanumerically (in ascending order).*
 
-### split `<string>` by `<delimiter>` as `<variable>`
+### split *`<string|RegEx>`* by `<delimiter>` as `<variable>`
 Splits a string into a collection using delimiter.
 
 **Example:**
@@ -239,3 +251,21 @@ Splits a string into a collection using delimiter.
     		log "here comes a [word]"
     	---
 ```
+---
+# Templating
+
+Templates are enclosed in square brackets and can appear in quoted strings, file paths, and even within regular expressions:
+```fortran
+{
+    remember "\CommNetwork" as domain
+    in usernames.txt
+        find all \b[domain][^:]: as user
+        for every user
+            select from 0 to -1
+            in /users/[user]/credentials.txt
+                change user to "[user]:pleaseresetme"
+                add user
+        ---
+}
+```
+If the variables can not be found, the template tags remain untouched, including square brackets. This allows us to easily mix them with regular expressions.
