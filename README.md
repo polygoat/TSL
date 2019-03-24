@@ -19,6 +19,7 @@ Once installed via Sublime Text's **Package Control**, files with the extension 
 ---
 # How does it work?
 TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
+
 ---
 # Prerequisites
 You need Python >= 3 installed to run TSL scripts.
