@@ -1,4 +1,4 @@
-#pip install timecode glob
+#pip install timecode glob pprint
 import io
 import os
 import re
@@ -11,7 +11,7 @@ from pprint import pprint
 
 sys.path.append(os.getcwd())
 
-from TaskRunnerCore import TaskRunnerCore
+from TSLCore import TaskRunnerCore
 
 class TaskRunner(TaskRunnerCore):
 	
@@ -532,11 +532,9 @@ class TaskRunner(TaskRunnerCore):
 
 if len(sys.argv) > 1:
 	taskFileName = sys.argv[1]
-else:
-	taskFileName = r'C:\Users\dborufka\dev\samsung\NLG\NLG_tools\Testfiles\test.run'
 
-TK = TaskRunner(taskFileName)
-
-if TK.task:
-	print('Running "%s"...\n' % taskFileName)
-	TK.run()
+	TK = TaskRunner(taskFileName)
+	
+	if TK.task:
+		print('Running "%s"...\n' % taskFileName)
+		TK.run()

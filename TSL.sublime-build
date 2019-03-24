@@ -1,0 +1,4 @@
+{
+	"shell_cmd": "python -u \"${packages}\\TSL\\TSL.py\" \"$file\"",
+	"selector": "source.tsl"
+}
