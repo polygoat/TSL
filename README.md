@@ -19,6 +19,8 @@ Python-based CLI for processing of our own text scraping language in pseudo-code
 ```
 ... This will read all lines from `runner/all_utterances.txt`, find all occurences of the string `"dateTime"`, take those lines, remove them and save all lines in `runner/cleaned_utterances`. The removed lines will be stored in `runner/dateTime_utterances.txt` instead, which is cleared out beforehand.
 
+---
+
 # Available commands
 
 ## File operations
