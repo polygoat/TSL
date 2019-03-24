@@ -2,8 +2,8 @@
 	"schema_version": "3.0.0",
 	"packages": [
 		{
-			"name": "TaskRunner",
-			"details": "https://github.com/polygoat/TaskRunner",
+			"name": "TSL",
+			"details": "https://github.com/polygoat/TSL",
 			"releases": [
 				{
 					"sublime_text": "*",
