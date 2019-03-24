@@ -3,7 +3,7 @@ Python-based CLI for processing of our own text scraping language in pseudo-code
 
 *The TSL Sublime Text package allows you to write and execute pseudo-code style language to process text files with Regular expressions and simple logic. This gives an easy entry to data mining to non-programmers.*
 
-Once installed via Sublime Text's Package Control, files with the extension `.tsl` will automatically get syntax-highlighting and a build system. Force building by choosing `Tools > Build System > TSL` from the ST3 menu.
+Once installed via Sublime Text's **Package Control**, files with the extension `.tsl` will automatically get **syntax-highlighting** and a **build system**. Force building by choosing **`Tools > Build System > TSL`** from the ST3 menu.
 
 ## Example:
 ```fortran
