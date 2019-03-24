@@ -11,11 +11,19 @@ Once installed via Sublime Text's **Package Control**, files with the extension 
 ... This will read all lines from `runner/all_utterances.txt`, find all occurences of the string `"dateTime"`, take those lines, remove them and save all lines in `runner/cleaned_utterances`. The removed lines will be stored in `runner/dateTime_utterances.txt` instead, which is cleared out beforehand.
 
 ---
+# Index
+### [How does it work?](#how-does-it-work)
+### [Prerequisites](#prerequisites)
+### [Available Commands](#available-commands)
+### [Templating](#templating)
+---
+# How does it work?
+TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
+---
 # Prerequisites
 You need Python >= 3 installed to run TSL scripts.
-
 ---
-# Available commands
+# Available Commands
 
 ## File operations
 
@@ -228,3 +236,21 @@ Splits a string into a collection using delimiter.
     		log "here comes a [word]"
     	---
 ```
+---
+# Templating
+
+Templates are enclosed in square brackets and can appear in quoted strings, file paths, and even within regular expressions:
+```fortran
+{
+    remember "\CommNetwork" as domain
+    in usernames.txt
+        find all \b[domain][^:]: as user
+        for every user
+            select from 0 to -1
+            in /users/[user]/credentials.txt
+                change user to "[user]:pleaseresetme"
+                add user
+        ---
+}
+```
+If the variables can not be found, the template tags remain untouched, including square brackets. This allows us to easily mix them with regular expressions.
