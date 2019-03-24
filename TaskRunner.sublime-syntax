@@ -24,6 +24,7 @@ contexts:
     - include: counts
     - include: strings
     - include: templates
+    - include: references
     - include: clauses
     - include: conjunctions
     - include: keywords
@@ -78,6 +79,14 @@ contexts:
         - meta_scope: comment.line.hash.tsl
         - match: $\n?
           pop: true
+
+  references:
+    - match: '\bas ([a-zA-Z]+)\b.+\1'
+      scope: punctuation.definition.comment.tsl
+    - include: clauses
+    - include: conjunctions
+    - include: keywords
+    - include: templates
 
   clauses:
     - match: '\b(in|as|from|to|until|with|by|without|where|between)\b'
