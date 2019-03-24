@@ -102,7 +102,7 @@ class TaskRunner(TaskRunnerCore):
 			io.open(what, 'w', encoding='utf8')
 			if self.verbose: print(' %s emptied out.' % what)
 		else:
-			self.__setData('file', io.open(self.__getData('filepath'), 'w', encoding='utf8'))
+			self.setData('file', io.open(self.getData('filepath'), 'w', encoding='utf8'))
 			if self.verbose: print(' %s emptied out.' % self.__getData('filepath'))
 
 	def _save(self, args):
