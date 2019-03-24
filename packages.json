@@ -1,0 +1,15 @@
+{
+	"schema_version": "3.0.0",
+	"packages": [
+		{
+			"name": "TaskRunner",
+			"details": "https://github.com/polygoat/TaskRunner",
+			"releases": [
+				{
+					"sublime_text": "*",
+					"tags": true
+				}
+			]
+		}
+	]
+}
