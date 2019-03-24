@@ -18,7 +18,10 @@ Once installed via Sublime Text's **Package Control**, files with the extension 
 ### [Templating](#templating)
 ---
 # How does it work?
-TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
+TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. 
+Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
+
+A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context.
 
 ---
 # Prerequisites
@@ -39,11 +42,22 @@ You need Python >= 3 installed to run TSL scripts.
 
 ### in *`<path/to/textfile.txt>`*
 *Opens up a file and reads all its lines. You can log the lines using `log line`
-All future file operations are refering to this one until your next "in" statement.*
+All future file operations are refering to this one until your next "in" statement.
+You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
     in myFiles/utterances.txt
+```
+
+### in *`<path/to/folder>`*
+*Creates the nested directory structure if it doesn't exist. Otherwise, the path will be used as context for future operations.*
+
+**Example:**
+```fortran
+    in "/Sublime Text/Packages"
+        count files as fileCount
+        log fileCount
 ```
 
 ### save `[as <filepath>]`
@@ -83,7 +97,7 @@ All future file operations are refering to this one until your next "in" stateme
 ```
 
 ### select from *`<string | RegEx | int>`* to *`<string | RegEx | int>`*
-*Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number*
+*Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number. Note that we start counting with 1 to keep it natural*
 
 **Example:**
 ```fortran
@@ -187,7 +201,7 @@ Example:
 
 *Sorts either the supplied or last referenced collection alphanumerically (in ascending order).*
 
-### split `<string>` by `<delimiter>` as `<variable>`
+### split *`<string|RegEx>`* by `<delimiter>` as `<variable>`
 Splits a string into a collection using delimiter.
 
 **Example:**
