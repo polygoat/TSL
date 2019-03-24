@@ -1,0 +1,4 @@
+{
+	"shell_cmd": "python -u \"${packages}\\TaskRunner\\TaskRunner.pyc\" \"$file\"",
+	"selector": "source.tcl"
+}

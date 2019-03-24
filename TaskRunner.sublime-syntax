@@ -1,0 +1,92 @@
+%YAML 1.2
+---
+name: Text Scraping Language (for TaskRunner)
+description: Intuitive Text Scraping Language parser for Python
+scopeName: source.tsl
+fileTypes: [tsl]
+# See http://www.sublimetext.com/docs/3/syntax.html
+file_extensions:
+  - tsl
+scope: source.tsl
+
+contexts:
+  # The prototype context is prepended to all contexts but those setting
+  # meta_include_prototype: false.
+  prototype:
+    - include: comments
+
+  main:
+    # The main context is the initial starting point of our syntax.
+    # Include other contexts from here (or specify them directly).
+    - include: directives
+    - include: numbers
+    - include: ordinals
+    - include: counts
+    - include: strings
+    - include: templates
+    - include: clauses
+    - include: conjunctions
+    - include: keywords
+
+  directives:
+    # Keywords are if, else for and while.
+    # Note that blackslashes don't need to be escaped within single quoted
+    # strings in YAML. When using single quoted strings, only single quotes
+    # need to be escaped: this is done by using two single quotes next to each
+    # other.
+    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|save|select|sort|split|take|unique|write)\b'
+      scope: entity.name.function.tsl
+
+  numbers:
+    - match: '\b(-)?[0-9.]+\b'
+      scope:  variable.function.tsl
+
+  ordinals:
+    - match: '\b(first|second|third|fourth|tenth|last)\b'
+      scope: variable.function.tsl
+
+  counts:
+    - match: '\b(one|two|three|four|ten)\b'
+      scope: variable.function.tsl
+
+  strings:
+    # Strings begin and end with quotes, and use backslashes as an escape
+    # character.
+    - match: '"'
+      scope: punctuation.definition.string.begin.tsl
+      push: inside_string
+
+  inside_string:
+    - meta_include_prototype: false
+    - meta_scope: string.quoted.double.tsl
+    - match: '\.'
+      scope: constant.character.escape.tsl
+    - include: templates
+    - match: '"'
+      scope: punctuation.definition.string.end.tsl
+      pop: true
+
+  templates:
+    - match: '\[[a-zA-Z\_0-9]+\]'
+      scope: constant.character.escape.tsl
+
+  comments:
+    - match: '#'
+      scope: punctuation.definition.comment.tsl
+      push:
+        # This is an anonymous context push for brevity.
+        - meta_scope: comment.line.hash.tsl
+        - match: $\n?
+          pop: true
+
+  clauses:
+    - match: '\b(in|as|from|to|until|with|by|without|where|between)\b'
+      scope: keyword.control.tsl
+
+  conjunctions:
+    - match: '\s(and|or)\s'
+      scope: punctuation.definition.comment.tsl
+
+  keywords:
+    - match: '\b(lines|files|folders|results|all|timecodes?|filenames?|extensions?)\b'
+      scope: string.quoted.double
