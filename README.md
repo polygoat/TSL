@@ -4,7 +4,7 @@ Python-based CLI for processing of our own text scraping language in pseudo-code
 *The TSL package allows you to write and execute pseudo-code style language to process text files with Regular expressions and simple logic. This gives an easy entry to data mining to non-programmers.*
 
 ## Example:
-```
+```fortran
 {
   in runner/all_utterances.txt 
     find all "dateTime"
@@ -28,43 +28,43 @@ Python-based CLI for processing of our own text scraping language in pseudo-code
 O*pens up a file and deletes all its content.*
 
 **Example:**
-
+```fortran
     in dateTime_utterances.txt
     	empty
-
+```
 ### in *`<path/to/textfile.txt>`*
 
 *Opens up a file and reads all its lines. You can log the lines using `log line`
 All future file operations are refering to this one until your next "in" statement.*
 
 **Example:**
-
+```fortran
     in myFiles/utterances.txt
-
+```
 ### save `[as <filepath>]`
 
 *Saves the latest collection in the given filename.*
 
 **Example:**
-
+```fortran
     save as [runner/cleaned_utterances.txt]
-
+```
 ### write `[<variable>]`
 
 *Writes given variable (or the results of the last `find all`) into the last file opened with `in`*
 
 **Example:**
-
+```fortran
     write dateTimeLines
-
+```
 ### add *`<string | variable>`* [to `<filepath>`]
 
 *Appends content to a file different from the currently open one*
 
 **Example:**
-
+```fortran
     add libraries to libs.txt
-
+```
 ---
 
 ## Selections
@@ -74,41 +74,41 @@ All future file operations are refering to this one until your next "in" stateme
 *Selects all words found in the last opened file.*
 
 **Example:**
-
+```fortran
     in utterances.txt	
     	select words
-
+```
 ### select from *`<string | RegEx | int>`* to *`<string | RegEx | int>`*
 
 *Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number*
 
 **Example:**
-
+```fortran
     select from "accessibilityApp" to "[v:"
     select from \s to \s
     select from 1 to "[v:samsung.tvSearchAndPlay.Genres:drama]"
-
+```
 ### select from `<string | RegEx | integer>`
 
 *Selects the range from the indicated string / regular expression / number until the end of the line*
 
 ****Example:**
-
+```fortran
     select from "dateTime"
     select from \d\d\d
     select from 122 
-    
+```
 
 ### select to `<string | RegEx | integer>`
 
 *Selects the range from the beginning of the line to the indicated string / regular expression / number.*
 
 **Example:**
-
+```fortran
     select until "dateTime"
     select until \W
     select until 370  
-
+```
 ---
 
 ## Debugging
@@ -128,19 +128,19 @@ All future file operations are refering to this one until your next "in" stateme
 *Stores the count of lines in a selection.*
 
 **Example:**
-
+```fortran
     count libraries as frequency
     log frequency
-
+```
 ### count *`<files | folders>`* in `<path/to/dir>` as `<countVariable>`
 
 *Stores the count of files or folders in a directory.*
 
 **Example:**
-
+```fortran
     count files in "C:\Windows" as systemFiles
     log "Exactly [systemFiles] system files found."
-
+```
 ## Manipulation
 
 ### change `<varName>` to `<formula>`
@@ -148,9 +148,9 @@ All future file operations are refering to this one until your next "in" stateme
 *Iterates over a collection and changes all entries according to the template tag. Use brackets to tag variables, like so: `[varName]`*
 
 **Example:**
-
+```fortran
     change utterance to "Hi, [utterance] #[i]"
-
+```
 *will e.g. change "my name is Dan" to "Hi, my name is Dan #1"*
 
 ### combine `<setName>` with `<setName>` as `<varName>`
@@ -158,20 +158,20 @@ All future file operations are refering to this one until your next "in" stateme
 *Merges two sets and stores it in a new variable.*
 
 **Example:**
-
+```fortran
     combine vowels with consonants as letters
-
+```
 ### find all *`<string | RegEx>`* [in `<varName>`]
 
 *Finds all occurrences of a string or regular expression in the lines of the currently open file or a stored collection. The results of this search are automatically stored in a variable `found`*
 
 Example:
-
+```fortran
     in utterances.txt
     	take lines as utterances
     	find all [aeiou]+ in utterances
     	log found
-
+```
 ### remove lines
 
 *Removes the last selected lines (e.g. the ones found using a `find all`)*
@@ -181,9 +181,9 @@ Example:
 *Replaces given string or regular expression by another string, optionally in a particular collection.*
 
 **Example:**
-
+```fortran
     replace \W+ by "_"
-
+```
 ### sort [`<varName>`]
 
 *Sorts either the supplied or last referenced collection alphanumerically (in ascending order).*
@@ -193,10 +193,10 @@ Example:
 Splits a string into a collection using delimiter.
 
 **Example:**
-
+```fortran
     split apples;bananas;oranges by ; as fruits
     log fruits
-
+```
 ### unique lines
 
 *Removes all duplicate lines from the last referenced collection.*
@@ -211,6 +211,8 @@ Splits a string into a collection using delimiter.
 
 *Changes the selected collection to whole lines (`take lines as ...`), results of a `find all` directive, or to the files found in a folder specified with a preceding `in <folderPath>` directive.*
 
+**Example:**
+```fortran
     in utterances.txt
     	find all <[^>]+>
     	take lines as htmlLines
@@ -219,7 +221,7 @@ Splits a string into a collection using delimiter.
     in libraries/de
     	take files as germanLibs
     	log germanLibs
-
+```
 ## Flow
 
 ### for every `<variable>`
@@ -230,9 +232,10 @@ Splits a string into a collection using delimiter.
 Always terminate a loop with three consecutive minus signs in a separte line.*
 
 **Example:**
-
+```fortran
     in utterances.txt
     	find all [^\b]+ as word
     	for every word
     		log "here comes a [word]"
     	---
+```
