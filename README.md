@@ -1,5 +1,5 @@
 # TSL – Text Scraping Language
-Python-based CLI for processing of our own text scraping language in pseudo-code
+Python-based CLI for processing of a scraping language in pseudo-code
 
 *The TSL Sublime Text package allows you to write and execute pseudo-code style language to process text files with Regular expressions and simple logic. This gives an easy entry to data mining to non-programmers.*
 
