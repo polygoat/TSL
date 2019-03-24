@@ -6,19 +6,8 @@ Python-based CLI for processing of a scraping language in pseudo-code
 Once installed via Sublime Text's **Package Control**, files with the extension `.tsl` will automatically get **syntax-highlighting** and a **build system**. Force building by choosing **`Tools > Build System > TSL`** from the ST3 menu.
 
 ## Example:
-```fortran
-{
-  in runner/all_utterances.txt 
-    find all "dateTime"
-    take lines as dateTimeLines
-    remove lines
-    save as runner/cleaned_utterances.txt
+![Sublime Text Syntax Highlighting](https://raw.githubusercontent.com/polygoat/TSL/master/preview.png "Sublime Text Syntax Highlighting")
 
-  in runner/dateTime_utterances.txt
-    empty
-    write dateTimeLines
-}
-```
 ... This will read all lines from `runner/all_utterances.txt`, find all occurences of the string `"dateTime"`, take those lines, remove them and save all lines in `runner/cleaned_utterances`. The removed lines will be stored in `runner/dateTime_utterances.txt` instead, which is cleared out beforehand.
 
 ---
