@@ -3,6 +3,7 @@ import io
 import os
 import re
 import sys
+import json
 import math
 import subprocess
 from timecode import Timecode
@@ -19,6 +20,7 @@ class TaskRunner(TaskRunnerCore):
 	counters = []
 	collections = []
 	selections = []
+	states = []
 
 	templates = {
 		'all': 			r'.*',
@@ -26,8 +28,6 @@ class TaskRunner(TaskRunnerCore):
 		'extension': 	r'\.([^.]+)$',
 		'filename': 	r'(^|[\\/]+)([^\\/]+)$',
 	}
-
-	loopCancelled = False
 
 	def __parseTimecode(self, timeCode, fps=1000):
 		time = Timecode(fps, timeCode.replace(',','.'))
@@ -37,8 +37,8 @@ class TaskRunner(TaskRunnerCore):
 		return str(timeCode).replace('.',delimiter)
 
 	def _log(self, args):
-		options = self.addSyntax('what').addDefaults({'what':'selection'}).parseArgs(args, '_log')
-
+		original = args[0]
+		options = self.addSyntax('what').parseArgs(args, '_log')
 		what = options['what']
 
 		if isinstance(what, dict):
@@ -53,23 +53,34 @@ class TaskRunner(TaskRunnerCore):
 				print('', what)
 			elif what:
 				if options.referenced['what']:
-					print(' %s: %s' % (options.referenced['what'], what))
+					try:
+						print(' %s: %s' % (options.referenced['what'], json.dumps(what, indent=4, sort_keys=True)))
+					except UnicodeEncodeError:
+						print(' ! %s could not be encoded for logging !' % options.referenced['what']) 
 				else:	
 					print('', what)
+			else:
+				if len(original[1:-1]):
+					print(' %s:' % original[1:-1], what)
+				elif len(what): 
+					print(what)
+				else:
+					print('')
 		else:
 			print('', what)
 
 	# clauses
 	def _in(self, args):
-		filePath = self.addSyntax('filePath').parseArgs(args)['filePath']
+		filePath = self.addSyntax('filePath').parseArgs(args, '_in')['filePath']
 
 		self.setData('filepath', filePath)
+		self.setData('filename', os.path.basename(filePath))
 
 		if not '.' in filePath:
 			self.setData('cwd', filePath)
-			try:		os.mkdir(filePath)
-			except:		pass
-
+			if not os.path.isdir(filePath):
+				try:		os.mkdir(filePath)
+				except:		print(" ! Couldn't create directory %s !" % filePath)
 			return
 
 		if os.path.exists(filePath):
@@ -85,30 +96,42 @@ class TaskRunner(TaskRunnerCore):
 
 		try:
 			self.data['line'] = re.split(r'[\n\r]', self.data['file'].read())
+			self.data['filelen'] = len(self.data['line'])
 		except: pass
 
-		if self.verbose: print(' %s lines read.' % len(self.data['line']))
+		if self.verbose: print(' %s line(s) read.' % len(self.data['line']))
 
 	def _as(self, args):
 		options = self.addSyntax('varName').parseArgs(args)
 		self.setData('selection', options.referenced['varName'])
 		return True
 
+	# modules
+	def _run(self, args):
+		self.addSyntax('script')
+		options = self.parseArgs(args)
+
+		with open(options['script'], 'r', encoding='utf8') as scriptFile:
+			script = scriptFile.read()
+			lines = self.parse(script)
+			self.lines[self.cmdLine:self.cmdLine] = lines
+
 	# file operations
 	def _empty(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args)['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_empty')['what']
 
 		if what:
 			io.open(what, 'w', encoding='utf8')
 			if self.verbose: print(' %s emptied out.' % what)
 		else:
 			self.setData('file', io.open(self.getData('filepath'), 'w', encoding='utf8'))
-			if self.verbose: print(' %s emptied out.' % self.__getData('filepath'))
+			self.setData('filelen', 0)
+			if self.verbose: print(' %s emptied out.' % self.getData('filepath'))
 
 	def _save(self, args):
 		self.addSyntax('"as"', 'target')
 		self.addDefaults({ 'target': self.getData('filepath') })
-		target = self.parseArgs(args)['target']
+		target = self.parseArgs(args, '_save')['target']
 
 		if not 'line' in self.data:
 			self.setData('line', self.getData())
@@ -120,17 +143,18 @@ class TaskRunner(TaskRunnerCore):
 			print(' Saved %s as "%s".' % (self.getData('selection'), target))
 
 	def _write(self, args):
-		what = self.addSyntax('what').addDefaults({ 'what': 'found' }).parseArgs(args)['what']
-		return self._add([what])
+		options = self.addSyntax('what').addDefaults({ 'what': 'found' }).parseArgs(args, '_write')
+		what = options['what']
+		return self._add([options.referenced['what']])
 
 	def _add(self, args):
 		self.addSyntax('what', '"to"', 'to')
 		self.addSyntax('what')
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_add')
 
 		if options['what'] == 'found':
 			content = [found[1] for found in self.getData(options['what'])]
-		elif 'what' in options.quoted:
+		elif 'what' in options.literals:
 			content = options['what']
 		else:
 			content = self.getData(options['what'])
@@ -146,7 +170,11 @@ class TaskRunner(TaskRunnerCore):
 				target.close()
 		else:
 			try:
-				self.data['file'].write('%s\n' % content)
+				if self.getData('filelen'):
+					self.data['file'].write('\n%s' % content)
+				else:
+					self.data['file'].write('%s' % content)
+
 				if self.verbose:
 					print(' %s saved in "%s". ' % (self.getData('selection'), self.getData('filename')))
 			except: 
@@ -154,19 +182,19 @@ class TaskRunner(TaskRunnerCore):
 				pass
 
 	def _bash(self, args):
-		options = self.addClauses('as').addDefaults({'as':'selection'}).parseArgs(args)
+		options = self.addClauses('as').addDefaults({'as':'selection'}).parseArgs(args, 'bash')
 
 		self.setData(options['as'], subprocess.check_output(options.arguments))
 
 	# memory
 	def _be(self, args):
-		prop = self.addSyntax('property').parseArgs(args)['property']
+		prop = self.addSyntax('property').parseArgs(args, '_be')['property']
 		setattr(self, prop, True)
 
 	def _calculate(self, args):
 		self.addClauses('as')
 		self.addDefaults({'as':'result'})
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_calculate')
 		result = eval(' '.join(options.arguments))
 		self.setData(options['as'], result)
 
@@ -186,8 +214,8 @@ class TaskRunner(TaskRunnerCore):
 	def _find(self, args):
 		self.addSyntax('"all"', 'what')
 		self.addClauses('in')
-		self.addDefaults({'in': 'line'})
-		options = self.parseArgs(args, 'findAll')
+		self.addDefaults({'in': 'selection'})
+		options = self.parseArgs(args, '_findAll')
 
 		stringOrRegEx = self.parseVars(options['what'])
 
@@ -196,13 +224,16 @@ class TaskRunner(TaskRunnerCore):
 
 		query = '%s' % stringOrRegEx
 
+		#self.setData('selection', options.findRef(options['in']))
+
+
 		if not isinstance(options['in'], list):
 			options['in'] = [options['in']]
 
 		if self.getData():
 			self.data['line'] = [self.getData()]
 		
-		isString = 'what' in options.quoted
+		isString = 'what' in options.literals
 		
 		if not isString:
 			stringOrRegEx = r'' + str(stringOrRegEx)
@@ -226,7 +257,7 @@ class TaskRunner(TaskRunnerCore):
 			if group:
 				self.data['group'].append([lineNr, group.groupdict()])
 
-		if self.verbose: print(' found %s lines matching %s' % (len(self.getData('found')), query))
+		if self.verbose: print(' found %s line(s) matching %s' % (len(self.getData('found')), query))
 
 	def _select(self, args):
 		self.addSyntax('"from"', 'from')
@@ -270,15 +301,16 @@ class TaskRunner(TaskRunnerCore):
 	def _take(self, args):
 		self.addSyntax('"lines|files|folders|results"')
 		self.addDefaults({'as':'selection', 'in':self.getData('cwd')})
-		self.addClauses('as', 'in')
-		options = self.parseArgs(args)
-		varName = options['as']
+		self.addClauses('as', 'in')		
+		options = self.parseArgs(args, '_take')
+		varName = options.findRef(options['as']) or options['as']
 
 		if 'lines' in options:
 			if 'found' in self.data:
 				self.setData(varName, [found[1] for found in self.data['found']])
 			else:
 				self.setData(varName, self.data['line'])
+				self.setData('selection', varName)
 
 		elif 'files' in options:
 			self.setData(varName, glob(os.path.join(options['in'],'*.*')))
@@ -308,7 +340,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('"timecode|duration"')
 		self.addClauses('from', 'as')
 		self.addDefaults({'as':'timecode'})
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_extract')
 
 		while len(options['from']) < 8:
 			options['from'] += ':00'
@@ -329,6 +361,7 @@ class TaskRunner(TaskRunnerCore):
 			for i, item in enumerate(options['what']):
 				varName = options.referenced['what']
 				self.data['i'] = i
+				self.data['j'] = i + 1
 				self.data['__' + varName] = item
 				formula = self.parseVars(options['formula'].replace('[' + varName + ']', '[__' + varName + ']'))
 				del self.data['__' + varName]
@@ -341,7 +374,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('what', '"by"', 'by')
 		self.addDefaults({'in':self.getData('selection')})
 		self.addClauses('in')
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_replace')
 
 		if not options['in']:
 			data = self.getData('line')
@@ -353,13 +386,13 @@ class TaskRunner(TaskRunnerCore):
 
 		if isinstance(data, list):
 			for i, entry in enumerate(data):
-				if options['what'] in options.quoted:
+				if options['what'] in options.literals:
 					data[i] = entry.replace(options['what'], options['by'])
 				else:
 					data[i] = re.sub(options['what'], options['by'], entry, re.I)
 			self.setData(_in, data)
 		else:
-			if options['what'] in options.quoted:
+			if options['what'] in options.literals:
 				self.setData(_in, data.replace(options['what'], options['by']))
 			else:
 				self.setData(_in, re.sub(options['what'], options['by'], data, re.I))
@@ -375,8 +408,6 @@ class TaskRunner(TaskRunnerCore):
 		if not 'as' in options:
 			options['as'] = options['what']
 
-		options['as'] = options.findRef(options['as'])
-
 		if isinstance(options['what'], bytes):
 			options['what'] = str(options['what'], 'utf8')
 
@@ -388,7 +419,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('what')
 		self.addClauses('as', 'in')
 		self.addDefaults({'in':self.getData('cwd')})
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_count')
 
 		if 'files' in options:
 			self.setData(options['as'], len(glob(os.path.join(options['in'], '*.*'))))
@@ -403,7 +434,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('x', '"with"', 'y')
 		self.addClauses('as')
 		self.addDefaults({'as':'selection'})
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, '_combine')
 
 		self.setData(options['as'], options['x'] + options['y'])
 
@@ -413,7 +444,10 @@ class TaskRunner(TaskRunnerCore):
 		options = self.parseArgs(args, '_unique')
 
 		noDupes = []
-		[noDupes.append(i) for i in options['what'] if not noDupes.count(i)]
+		if isinstance(options['what'], str):
+			noDupes = [options['what']]
+		else:
+			[noDupes.append(i) for i in options['what'] if not noDupes.count(i)]
 
 		if len(noDupes) == 1:
 			noDupes = noDupes[0]
@@ -421,7 +455,7 @@ class TaskRunner(TaskRunnerCore):
 		self.setData(options.referenced['what'], noDupes)
 
 	def _sort(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args)['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_sort')['what']
 		
 		if what == 'lines':
 			self.getData('line').sort()
@@ -429,7 +463,7 @@ class TaskRunner(TaskRunnerCore):
 			what.sort()
 
 	def _reverse(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args)['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_reverse')['what']
 		if what == 'lines':
 			self.getData('line').reverse()
 		return what.reverse()
@@ -449,7 +483,9 @@ class TaskRunner(TaskRunnerCore):
 	# 			#del self.getData()[lineNr]
 
 	def _remove(self, args):
-		what = self.addSyntax('what').parseArgs(args)['what']
+		self.addSyntax('what')
+		self.addSyntax('"empty"', '"lines|results|folders|files"')
+		what = self.parseArgs(args, '_remove')['what']
 
 		if what == 'lines':
 			lines = self.getData('line')
@@ -465,71 +501,65 @@ class TaskRunner(TaskRunnerCore):
 
 	#control flow
 	def _for(self, args):
-		options = self.addSyntax('"every"', 'collection').parseArgs(args)
+		options = self.addSyntax('"every"', 'collection').parseArgs(args, '_for')
+
 		collection = options['collection']
 		varName = options.referenced['collection']
 
+		if not isinstance(collection, list):
+			collection = [collection]
+
 		if len(collection):
 			self.scopes.append(self.cmdLine + 1)
-			self.collections.append(self.getData(varName))
+			self.collections.append(collection)
 			self.selections.append(varName)
 			self.counters.append(0)
+			self.states.append(True)
 
-			self.data['loops'] = len(self.collections[-1])
+			collection = self.collections[-1]
+
+			self.data['loops'] = len(collection)
 			self.data['i'] = 0
-			self.data['collection'] = self.collections[-1]
+			self.data['j'] = 1
+			self.data['collection'] = collection
 			self.data['selection'] = varName
 
 			self.setData(varName, self.data['collection'][0])
 		else:
 			if self.verbose: print('', varName, 'empty, for loop not iterating!')
 
-			self.loopCancelled = True
+			#self.states[-1] = False
 
-			while self.lines[self.cmdLine] != '---':
+			while self.cmdLine < len(self.lines) and self.lines[self.cmdLine] != '---':
 				self.cmdLine += 1
+			self.cmdLine -= 1
 
 	def _repeat(self, args=False):
-		if self.loopCancelled: 
-			self.loopCancelled = False
+		if not self.states[-1]:
+			self.states[-1] = True
 			return False
 
-		try:
-			self.counters[-1] += 1
+		self.counters[-1] += 1
+		self.data['i'] += 1
+		self.data['j'] += 1
 
-			if self.data['i'] >= self.data['loops'] - 1:
-				if len(self.collections):
-					self.setData(self.collections[-1])
-				
-				self.scopes.pop()
-				self.collections.pop()
-				self.counters.pop()
-				self.selections.pop()
+		if self.counters[-1] >= len(self.collections[-1]):
+			self.setData(self.selections[-1], self.collections[-1])
+			self.scopes.pop()
+			self.counters.pop()
+			self.selections.pop()
+			self.collections.pop()
 
-				if self.counters[-1] > len(self.collections[-1]):
-					self.cmdLine += 1
-					return False
+			if len(self.collections):
+				self.setData('collection', self.collections[-1])
+				self.setData('selection', self.selections[-1])
+				self.setData('i', self.counters[-1])
+				self.setData('j', self.counters[-1] + 1)
+		else:		
+			self.cmdLine = self.scopes[-1] - 1
+			self.setData(self.data['selection'], self.data['collection'][self.counters[-1]])
 
-				if len(self.scopes) > 0:
-					self.cmdLine = self.scopes[-1] - 1
-
-					self.counters[-1] += 1
-					self.data['collection'] = self.collections[-1]
-					self.data['loops'] = len(self.collections[-1])
-					self.data['i'] = self.counters[-1]
-					self.data['selection'] = self.selections[-1]
-				else:
-					self.cmdLine += 1 
-			else:		
-				self.cmdLine = self.scopes[-1] - 1	
-				self.data['i'] += 1
-		
-			if self.data['i'] < len(self.data['collection']):
-				self.setData(self.data['collection'][self.data['i']])
-
-		except: pass
-
-
+	
 if len(sys.argv) > 1:
 	taskFileName = sys.argv[1]
 

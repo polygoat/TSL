@@ -35,7 +35,7 @@ contexts:
     # strings in YAML. When using single quoted strings, only single quotes
     # need to be escaped: this is done by using two single quotes next to each
     # other.
-    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|save|select|sort|split|take|unique|write)\b'
+    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\b'
       scope: entity.name.function.tsl
 
   numbers:

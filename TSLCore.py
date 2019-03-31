@@ -11,7 +11,7 @@ class TaskRunnerArgs(dict):
 		self.arguments = []
 		self.parsed = {}
 		self.referenced = {}
-		self.quoted = []
+		self.literals = []
 		self.clauses = []
 
 		self.update(defaults)
@@ -49,7 +49,7 @@ class TaskRunnerArgs(dict):
 		return False
 
 	def __str__(self):
-		return '<TaskRunnerArguments\n\t%s\n\treferenced[%s]\n\tquoted%s\n\tparsed[%s]\n/>' % (self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.quoted, self.__renderProps(self.parsed, ' '))
+		return '<TaskRunnerArguments\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
 
 class TaskRunnerCore:
 	__ordinals = ['_', 'first','second','third','fourth', 'last']
@@ -86,19 +86,24 @@ class TaskRunnerCore:
 			else:
 				print('! This is not a valid task file !')
 
-	def __isQuoted(self, anyString):
+	def __isLiteral(self, anyString):
 		if not isinstance(anyString, str): return False
 		return anyString.startswith('"') and anyString.endswith('"')
 	
 	def __isRaw(self, anyString):
 		return anyString.startswith('/') and anyString.endswith('/')
 
+	def __isReference(self, anyString):
+		if isinstance(anyString, str):
+			return anyString.startswith('[') and anyString.endswith(']')
+		return False
+
 	def __parseNumbers(self, item):
 		if item.isdigit() or (item[1:].isdigit() and item[0] == '-'):
 			return int(item) - 1
 		return item
 
-	def __normalizeQuotedStrings(self, args):
+	def __normalizeLiterals(self, args):
 		openQuotes = []
 		closeQuotes = []
 
@@ -112,9 +117,13 @@ class TaskRunnerCore:
 
 		openQuotes.reverse()
 		closeQuotes.reverse()
-
+		
 		for i, openQuote in enumerate(openQuotes):
-			closeQuote = closeQuotes[i]
+			if len(closeQuotes) >= i:
+				closeQuote = closeQuotes[i]
+			else:
+				closeQuote = -1
+				raise SyntaxError(' String needs to have closing quotation mark near:\n  %s' % (self.lines[self.cmdLine-1]))
 			args[openQuote:closeQuote] = [' '.join(args[openQuote:closeQuote])]
 
 		return args
@@ -123,21 +132,21 @@ class TaskRunnerCore:
 		upForDeletion = []
 
 		for i, token in enumerate(args):
-			if self.__isQuoted(token):
+			if self.__isLiteral(token):
 				parsed = self.parseVars(token)[1:-1]
 				if parsed != token:
 					parsedArgs.parsed[parsed.encode('utf8')] = token
 				args[i] = parsed
-				parsedArgs.quoted.append(token[1:-1])
+				parsedArgs.literals.append(token[1:-1])
 			elif token in self.allowedClauses:
 				parsedArgs[token] = args[i+1]
 				if token in self.allowedOrdinals:
 					args[i+1] = self.__parseNumbers(args[i+1])
 				upForDeletion.extend([i, i+1])
 				parsedArgs.clauses.append(token)
-			elif token in self.data:
-				args[i] = self.getData(token)
-				parsedArgs.referenced[token] = args[i]
+			elif self.__isReference(token):
+				args[i] = self.getData(token[1:-1])
+				parsedArgs.referenced[token[1:-1]] = args[i]
 
 		upForDeletion.reverse()
 
@@ -148,16 +157,25 @@ class TaskRunnerCore:
 			if token in parsedArgs:
 				arg = parsedArgs[token]
 
-				if self.__isQuoted(arg):
+				if self.__isReference(arg):
+					parsedArgs[token] = self.getData(arg[1:-1])
+				elif self.__isLiteral(arg):
 					arg = arg[1:-1]
-
-				if isinstance(arg ,str) and arg in self.data:
-					parsedArgs[token] = self.getData(arg)
 				else:
 					parsedArgs[token] = self.__parseNumbers(str(arg))
 
-
 		return (args, parsedArgs)
+
+	def __resolveOrdinals(self, token, item):
+		if token in self.allowedOrdinals:
+			if item in self.__ordinals:
+				if item == 'last':
+					item = -1
+				else:
+					return self.__ordinals.index(item) - 1
+			else:
+				return self.__parseNumbers(item)
+		return item
 
 	def isActive(self):
 		return self.active
@@ -201,14 +219,12 @@ class TaskRunnerCore:
 		command = self.lines[cmdLine].strip()
 		self.cmdLine = cmdLine + 1
 
-
 		command = re.split(r'[\s\t]+', command.strip())
 
 		if not command[0].startswith('#') and len(command):
 			if command[0][0:3] == '---':
 				command[0] = 'repeat'
 			
-
 			self.argumentLabels = []
 			self.allowedClauses = []
 			self.allowedOrdinals = []
@@ -239,7 +255,7 @@ class TaskRunnerCore:
 		# set defó values
 		parsedArgs = TaskRunnerArgs(args, self.defaults)
 
-		args = self.__normalizeQuotedStrings(args)		
+		args = self.__normalizeLiterals(args)		
 		args, parsedArgs = self.__extractClauses(args, parsedArgs)
 
 		#find registered argument patterns for correct property assignment
@@ -252,7 +268,7 @@ class TaskRunnerCore:
 				if len(pattern) == len(args):
 					if len(pattern):
 						for i, token in enumerate(pattern):
-							if self.__isQuoted(token):
+							if self.__isLiteral(token):
 								if re.match(token[1:-1], args[i]):
 									match = match and True
 									if match:
@@ -272,25 +288,18 @@ class TaskRunnerCore:
 
 		if matchedPattern:
 			for i, token in enumerate(matchedPattern):
-				if not self.__isQuoted(token):
+				if not self.__isLiteral(token):
 					if self.__isRaw(token):
 						token = token[1:-1]
 						key = str(args[i]).encode('utf8')
 						if key in parsedArgs.parsed:
 							args[i] = parsedArgs.parsed[key][1:-1]
 					else:
-						if token in self.allowedOrdinals:
-							if args[i] in self.__ordinals:
-								if args[i] == 'last':
-									args[i] = -1
-								else:
-									args[i] = self.__ordinals.index(args[i]) - 1
-							else:
-								args[i] = self.__parseNumbers(args[i])
+						args[i] = self.__resolveOrdinals(token, args[i])
 
 						if isinstance(args[i], int):
 							parsedArgs[token] = args[i]
-						elif isinstance(args[i], str) and args[i] in self.data:
+						elif self.__isReference(token):
 							parsedArgs[token] = self.getData(args[i])
 							parsedArgs.referenced[token] = args[i]
 						else:
@@ -311,17 +320,28 @@ class TaskRunnerCore:
 
 	def executeCommand(self, command):
 		if hasattr(self, '_' + command[0]):
+			#print('_' + command[0], command[1:])
 			eval('self._' + command[0])(command[1:])
+			#print('-'*50)
+			#print('\n')
 		else:
-			print(command[0], 'is no valid command.')
+			print(' !', command[0], 'is no valid command !')
 
-	def run(self):
-		isTask = re.findall(r'\{\n\s*([\w\W]+)\s*\n\}', self.task)
+	def parse(self, task):
+		isTask = re.findall(r'\{\n\s*([\w\W]+)\s*\n\}', task)
 
 		if len(isTask):
-			self.lines = re.split(r'\s*[\n\r]+\s*|\s*and\s*', isTask[0])
+			return re.split(r'\s*[\n\r]\s*|\s*and\s*', isTask[0])
+
+		print(' ! No viable task found !')
+		return False
+
+	def run(self):
+		task = self.parse(self.task)
+
+		if task:
+			self.lines = task
 			self.runLine(0)
 			print('')
-		else:
-			print(' ! No viable task found !')
+		
 		return self

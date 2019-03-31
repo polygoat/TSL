@@ -21,7 +21,7 @@ Once installed via Sublime Text's **Package Control**, files with the extension 
 TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. 
 Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
 
-A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context.
+A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context. To reference variables rather than strings use square brackets. `log something` will log the string "something", while `log [something]` will log the content of the variable called _something_.
 
 ---
 # Prerequisites
@@ -57,7 +57,7 @@ You'll usually see this followed by a `take` or `find all` command*
 ```fortran
     in "/Sublime Text/Packages"
         count files as fileCount
-        log fileCount
+        log [fileCount]
 ```
 
 ### save `[as <filepath>]`
@@ -65,7 +65,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    save as [runner/cleaned_utterances.txt]
+    save as runner/cleaned_utterances.txt
 ```
 
 ### write `[<variable>]`
@@ -73,7 +73,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    write dateTimeLines
+    write [dateTimeLines]
 ```
 
 ### add *`<string | variable>`* [to `<filepath>`]
@@ -81,7 +81,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    add libraries to libs.txt
+    add [libraries] to libs.txt
 ```
 
 ---
@@ -142,8 +142,8 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    count libraries as frequency
-    log frequency
+    count [libraries] as frequency
+    log [frequency]
 ```
 
 ### count *`<files | folders>`* in `<path/to/dir>` as `<countVariable>`
@@ -163,7 +163,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    change utterance to "Hi, [utterance] #[i]"
+    change [utterance] to "Hi, [utterance] #[i]"
 ```
 *will e.g. change "my name is Dan" to "Hi, my name is Dan #1"*
 
@@ -172,7 +172,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    combine vowels with consonants as letters
+    combine [vowels] with [consonants] as letters
 ```
 
 ### find all *`<string | RegEx>`* [in `<varName>`]
@@ -182,8 +182,8 @@ Example:
 ```fortran
     in utterances.txt
     	take lines as utterances
-    	find all [aeiou]+ in utterances
-    	log found
+    	find all [aeiou]+ in [utterances]
+    	log [found]
 ```
 
 ### remove lines
@@ -207,7 +207,7 @@ Splits a string into a collection using delimiter.
 **Example:**
 ```fortran
     split apples;bananas;oranges by ; as fruits
-    log fruits
+    log [fruits]
 ```
 
 ### unique lines
@@ -226,11 +226,11 @@ Splits a string into a collection using delimiter.
     in utterances.txt
     	find all <[^>]+>
     	take lines as htmlLines
-    	log htmlLines
+    	log [htmlLines]
     
     in libraries/de
     	take files as germanLibs
-    	log germanLibs
+    	log [germanLibs]
 ```
 
 ---
@@ -247,7 +247,7 @@ Splits a string into a collection using delimiter.
 ```fortran
     in utterances.txt
     	find all [^\b]+ as word
-    	for every word
+    	for every [word]
     		log "here comes a [word]"
     	---
 ```
@@ -260,11 +260,11 @@ Templates are enclosed in square brackets and can appear in quoted strings, file
     remember "\CommNetwork" as domain
     in usernames.txt
         find all \b[domain][^:]: as user
-        for every user
+        for every [user]
             select from 0 to -1
-            in /users/[user]/credentials.txt
-                change user to "[user]:pleaseresetme"
-                add user
+            in "/users/[user]/credentials.txt"
+                change [user] to "[user]:pleaseresetme"
+                add [user]
         ---
 }
 ```
