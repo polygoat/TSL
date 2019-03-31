@@ -8,7 +8,7 @@ Once installed via Sublime Text's **Package Control**, files with the extension 
 ## Example:
 ![Sublime Text Syntax Highlighting](https://raw.githubusercontent.com/polygoat/TSL/master/preview.png "Sublime Text Syntax Highlighting")
 
-... This will read all lines from `runner/all_utterances.txt`, find all occurences of the string `"dateTime"`, take those lines, remove them and save all lines in `runner/cleaned_utterances`. The removed lines will be stored in `runner/dateTime_utterances.txt` instead, which is cleared out beforehand.
+... This will read all lines from `stats/milestones.csv`, take all lines, splits them into columns, selects the second column and saves the corresponding row into a file labeled by said column (e.g. `stats/31-03-2019.txt`).
 
 ---
 # Index
