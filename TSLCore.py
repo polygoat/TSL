@@ -6,13 +6,34 @@ import sys
 from glob import glob
 from pprint import pprint
 
+# hackaround for tail recursion (mainly for runLine)
+class Recurse(Exception):
+    def __init__(self, *args, **kwargs):
+        self.args = args
+        self.kwargs = kwargs
+
+def recurse(*args, **kwargs):
+    raise Recurse(*args, **kwargs)
+        
+def tail_recursive(f):
+    def decorated(*args, **kwargs):
+        while True:
+            try:
+                return f(*args, **kwargs)
+            except Recurse as r:
+                args = r.args
+                kwargs = r.kwargs
+                continue
+    return decorated
+
 class TaskRunnerArgs(dict):
-	def __init__(self, args, defaults={}):
+	def __init__(self, args, defaults={}, debug=''):
 		self.arguments = []
 		self.parsed = {}
 		self.referenced = {}
 		self.literals = []
 		self.clauses = []
+		self.method = debug
 
 		self.update(defaults)
 		for k,v in defaults.items():
@@ -49,7 +70,7 @@ class TaskRunnerArgs(dict):
 		return False
 
 	def __str__(self):
-		return '<TaskRunnerArguments\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
+		return '<TaskRunnerArguments.%s\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
 
 class TaskRunnerCore:
 	__ordinals = ['_', 'first','second','third','fourth', 'last']
@@ -62,6 +83,8 @@ class TaskRunnerCore:
 	allowedClauses = []
 	allowedOrdinals = []
 	defaults = {}
+	plugins = {}
+	parsers = {}
 
 	cmdLine = 0
 	fileName = ''
@@ -99,8 +122,9 @@ class TaskRunnerCore:
 		return False
 
 	def __parseNumbers(self, item):
-		if item.isdigit() or (item[1:].isdigit() and item[0] == '-'):
-			return int(item) - 1
+		if isinstance(item, str):
+			if item.isdigit() or (item[1:].isdigit() and item[0] == '-'):
+				return int(item) - 1
 		return item
 
 	def __normalizeLiterals(self, args):
@@ -162,7 +186,7 @@ class TaskRunnerCore:
 				elif self.__isLiteral(arg):
 					arg = arg[1:-1]
 				else:
-					parsedArgs[token] = self.__parseNumbers(str(arg))
+					parsedArgs[token] = self.__parseNumbers(arg)
 
 		return (args, parsedArgs)
 
@@ -176,6 +200,14 @@ class TaskRunnerCore:
 			else:
 				return self.__parseNumbers(item)
 		return item
+
+	def registerPlugin(self, name, method):
+		self.plugins[name] = method
+		return self
+
+	def registerParser(self, extension, method):
+		self.parsers[extension] = method
+		return self
 
 	def isActive(self):
 		return self.active
@@ -191,10 +223,11 @@ class TaskRunnerCore:
 		return [dict[arg] for arg in args]
 
 	def parseVars(self, toParse):
-		return re.sub(r'(?<!\\)\[([^]]+)\]', lambda match: str(self.getData(match.group()[1:-1])), toParse, re.I)
+		results = re.sub(r'(?<!\\)\[([^]]+)\]', lambda match: str(self.getData(match.group()[1:-1])), toParse, re.I)
+		return results
 
 	def getData(self, name=False):
-		if name: 
+		if name and isinstance(name, str): 
 			if name in self.data:
 				return self.data[name]
 			else:
@@ -215,6 +248,7 @@ class TaskRunnerCore:
 			name = self.data['selection']
 		self.data[name] = value
 
+	@tail_recursive
 	def runLine(self, cmdLine):
 		command = self.lines[cmdLine].strip()
 		self.cmdLine = cmdLine + 1
@@ -233,7 +267,7 @@ class TaskRunnerCore:
 			self.executeCommand(command)
 
 		if self.isActive() and self.cmdLine < len(self.lines):
-			self.runLine(self.cmdLine) 
+			recurse(self, self.cmdLine) 
 
 	def addClauses(self, *clauses):
 		self.allowedClauses.extend(clauses)
@@ -253,7 +287,7 @@ class TaskRunnerCore:
 
 	def parseArgs(self, args, debug=False):
 		# set defó values
-		parsedArgs = TaskRunnerArgs(args, self.defaults)
+		parsedArgs = TaskRunnerArgs(args, self.defaults, debug)
 
 		args = self.__normalizeLiterals(args)		
 		args, parsedArgs = self.__extractClauses(args, parsedArgs)
@@ -269,7 +303,7 @@ class TaskRunnerCore:
 					if len(pattern):
 						for i, token in enumerate(pattern):
 							if self.__isLiteral(token):
-								if re.match(token[1:-1], args[i]):
+								if isinstance(args[i], str) and re.match(token[1:-1], args[i]):
 									match = match and True
 									if match:
 										matchedPattern = pattern
@@ -302,8 +336,8 @@ class TaskRunnerCore:
 						elif self.__isReference(token):
 							parsedArgs[token] = self.getData(args[i])
 							parsedArgs.referenced[token] = args[i]
-						else:
-							parsedArgs.referenced[token] = parsedArgs.findRef(args[i])
+						#else:
+						#	parsedArgs.referenced[token] = parsedArgs.findRef(args[i])
 
 					parsedArgs[token] = args[i]
 				elif '|' in token:
@@ -321,9 +355,10 @@ class TaskRunnerCore:
 	def executeCommand(self, command):
 		if hasattr(self, '_' + command[0]):
 			#print('_' + command[0], command[1:])
-			eval('self._' + command[0])(command[1:])
-			#print('-'*50)
-			#print('\n')
+				eval('self._' + command[0])(command[1:])
+			#print('-'*50, '\n')
+		elif command[0] in self.plugins:
+			self.plugins[command[0]](command[1:])
 		else:
 			print(' !', command[0], 'is no valid command !')
 

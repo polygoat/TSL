@@ -25,18 +25,26 @@ A command's inputs and outputs can be **strings** or **collections of strings**.
 
 ---
 # Prerequisites
-You need Python >= 3 installed to run TSL scripts.
+You need Python >= 3 installed and added to your PATH variable to run TSL scripts.
 ---
 # Available Commands
 
-## File operations
+## File & system operations
+
+### bash `<command>` as `<variable>`
+*Runs a bash command and saves the returned output to a variable.*
+
+**Example:**
+```fortran
+    bash git branch as branches
+```
 
 ### empty `[<filepath>]`
 *Opens up a file and deletes all its content.*
 
 **Example:**
 ```fortran
-    in dateTime_utterances.txt
+    in wordbag.txt
     	empty
 ```
 
@@ -47,7 +55,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    in myFiles/utterances.txt
+    in stats/01092019.txt
 ```
 
 ### in *`<path/to/folder>`*
@@ -65,7 +73,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    save as runner/cleaned_utterances.txt
+    save as runner/cleaned_userinputs.txt
 ```
 
 ### write `[<variable>]`
@@ -73,7 +81,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    write [dateTimeLines]
+    write [userIds]
 ```
 
 ### add *`<string | variable>`* [to `<filepath>`]
@@ -127,12 +135,20 @@ You'll usually see this followed by a `take` or `find all` command*
 ```
 
 ---
-## Debugging
+## Debugging & calculations
 
 ### be `<property>`
 *Sets one of the following properties of TSL to true:*
 
 `verbose` | `active`
+
+### calculate `operation` as `<variable>`
+*Calculates mathematical operations*
+
+**Example:**
+```fortran
+    calculate (5 * 4) / 2 as ratio
+```
 
 ### log *`<variable | string>`*
 *Prints to the console. Use strings with template tags (e.g. "here is: [varName]") for variables*
@@ -142,7 +158,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    count [libraries] as frequency
+    count [entries-per-day] as frequency
     log [frequency]
 ```
 
@@ -163,7 +179,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    change [utterance] to "Hi, [utterance] #[i]"
+    change [salute] to "Hi, [salute] #[i]"
 ```
 *will e.g. change "my name is Dan" to "Hi, my name is Dan #1"*
 
@@ -180,7 +196,7 @@ You'll usually see this followed by a `take` or `find all` command*
 
 Example:
 ```fortran
-    in utterances.txt
+    in corpus_de.txt
     	take lines as utterances
     	find all [aeiou]+ in [utterances]
     	log [found]
@@ -223,7 +239,7 @@ Splits a string into a collection using delimiter.
 
 **Example:**
 ```fortran
-    in utterances.txt
+    in source.txt
     	find all <[^>]+>
     	take lines as htmlLines
     	log [htmlLines]
@@ -245,12 +261,16 @@ Splits a string into a collection using delimiter.
 
 **Example:**
 ```fortran
-    in utterances.txt
-    	find all [^\b]+ as word
-    	for every [word]
-    		log "here comes a [word]"
+    in corpus.txt
+    	find all [^\b]+\b[^\b]+ as bigram
+    	for every [bigram]
+    		log "#[i]: [bigram]"
     	---
 ```
+
+### run `path/to/script.tsl`
+*Runs another TSL file*
+
 ---
 # Templating
 
