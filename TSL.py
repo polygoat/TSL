@@ -8,9 +8,6 @@ import math
 import subprocess
 from glob import glob
 from pprint import pprint
-
-sys.path.append(os.getcwd())
-
 from TSLCore import TaskRunnerCore
 
 class TaskRunner(TaskRunnerCore):
