@@ -26,6 +26,12 @@ A command's inputs and outputs can be **strings** or **collections of strings**.
 ---
 # Prerequisites
 You need Python >= 3 installed and added to your PATH variable to run TSL scripts.
+
+In addition, TSL relies on the Python modules glob and pprint. Install them like this:
+```bash
+pip install glob pprint
+```
+
 ---
 # Available Commands
 
