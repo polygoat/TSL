@@ -1,4 +1,4 @@
-#pip install timecode glob pprint
+#pip install timecode glob pprint inflect
 import io
 import os
 import re
@@ -10,13 +10,39 @@ from glob import glob
 from pprint import pprint
 from TSLCore import TaskRunnerCore
 
+class TaskRunnerExpressions:
+	def _no(self, collection):
+		return []
+
+	def _number(self, collection, nr):
+		return collection[nr]
+
+	def _all(self, collection): 
+		return collection
+
+	def _odd(self, collection):
+		return [entry for i, entry in enumerate(collection) if (i+1) % 2]
+
+	def _other(self, collection): 	
+		return self._even(collection)
+
+	def _even(self, collection): 	
+		return self._every(collection, 2)
+
+	def _every(self, collection, ordinal=1):
+		args = [ordinal]
+		return [entry for i, entry in enumerate(collection) if not (i+1) % ordinal]
+
+	def _entries(self, collection, nr):
+		return collection[0:nr]
+
 class TaskRunner(TaskRunnerCore):
-	
 	scopes = []
 	counters = []
 	collections = []
 	selections = []
 	states = []
+	expressions = TaskRunnerExpressions()
 
 	templates = {
 		'all': 			r'.*',
@@ -68,29 +94,49 @@ class TaskRunner(TaskRunnerCore):
 			return
 
 		if os.path.exists(filePath):
-			self.data['file'] = io.open(filePath, 'r+', encoding='utf8')
-			extension = os.path.splitext(filePath)[1]
-			if extension in self.parsers:
-				self.data['file'] = self.parsers[extension].parse(self.data['file'].read())
+			try:
+				self.data['file'] = io.open(filePath, 'r+', encoding='utf8')
+				extension = os.path.splitext(filePath)[1]
+				self.data['filecontent'] = self.data['file'].read()
+				
+				if extension in self.parsers:
+					self.data['filecontent'] = self.parsers[extension].parse(self.data['filecontent'])
+			except:
+				print(' ! "%s" could not be opened !' % filePath)
 		else:
 			fileDir = os.path.dirname(filePath)
+			dirName = os.path.dirname(fileDir).strip()
+
+			if not len(dirName):
+				dirName = fileDir
 			
-			if not os.path.exists(fileDir):
-				try: 	os.makedirs(os.path.dirname(fileDir), exist_ok=True)
-				except: pass
+			if len(dirName):
+				if not os.path.exists(dirName):
+					try: 	os.makedirs(dirName, exist_ok=True)
+					except: print(' ! Could not create directory tree %s !' % (dirName))
 
 			self.data['file'] = io.open(filePath, 'w', encoding='utf8')
+			self.data['filecontent'] = ''
+			self.data['filelen'] = 0
 
 		try:
-			self.data['line'] = re.split(r'[\n\r]', self.data['file'].read())
-			self.data['filelen'] = len(self.data['line'])
-		except: pass
+			self.data['line'] = re.split(r'[\n\r]', self.data['filecontent'])
+
+			if len(self.data['line']) == 1 and not len(self.data['line'][0]):
+				self.data['line'] = []
+				self.data['filelen'] = 0
+			else:
+				self.data['filelen'] = len(self.data['line'])
+
+		except:
+			self.data['line'] = []
+			self.data['filelen'] = 0
 
 		if self.verbose: print(' %s line(s) read.' % len(self.data['line']))
 
 	def _as(self, args):
 		options = self.addSyntax('varName').parseArgs(args)
-		self.setData('selection', options.referenced['varName'])
+		self.setData('selection', options['varName'])
 		return True
 
 	# modules
@@ -236,7 +282,6 @@ class TaskRunner(TaskRunnerCore):
 		self.data['found'] = []
 		self.data['group'] = []
 
-
 		for lineNr, line in enumerate(options['in']):
 			matches = []
 			group = False
@@ -261,19 +306,16 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('"to"', 'to')
 		self.addSyntax('"words"')
 		self.addSyntax('which')
-		self.addClauses('until','to')
+		self.addClauses('until','to', 'of')
 		self.allowOrdinals('from','to','until','which')
-		self.addDefaults({'from':0, 'to':None, 'until':None})
+		self.addDefaults({'from':0, 'to':None, 'until':None, 'of':self.getData()})
 		options = self.parseArgs(args, '_select')
 
-		__counts = ['_', '_', 'one','two','three','four']
-
-		#elif args[0] in __counts:
-		#	args = ['to', str(__counts.index(args[0]))]
+		of = options.findRef(options['of']) or options['of']
 
 		if 'which' in options:
-			try: self.setData(self.getData()[options['which']])
-			except: print(' ! %s has no index %s ! ' % (self.data['selection'], options['which']))
+			try: self.setData(of, self.getData(of)[options['which']])
+			except: print(' ! %s has no index %s ! ' % (of, options['which']))
 		elif 'words' in options:
 			self.setData(re.split(r'\b', self.getData()))
 		else:
@@ -290,15 +332,12 @@ class TaskRunner(TaskRunnerCore):
 					
 					if match: 	options['to'] = match.span()[0]
 					else: 		options['to'] = None
-				#else:
-				#	print(options)
-				#	options['to'] += 1
 
-			self.setData(self.getData()[options['from']:options['to']])
+			self.setData(of, self.getData(of)[options['from']:options['to']])
 
 	def _take(self, args):
 		self.addSyntax('"lines|files|folders|results"')
-		self.addDefaults({'as':'selection', 'in':self.getData('cwd')})
+		self.addDefaults({'as':'selection', 'in': self.getData('cwd')})
 		self.addClauses('as', 'in')		
 
 		options = self.parseArgs(args, '_take')
@@ -312,10 +351,15 @@ class TaskRunner(TaskRunnerCore):
 				self.setData('selection', varName)
 
 		elif 'files' in options:
-			self.setData(varName, glob(os.path.join(options['in'],'*.*')))
+			if '.' in os.path.split(options['in'])[-1]:
+				path = options['in']
+			else:
+				path = os.path.join(options['in'],'*.*')
+
+			self.setData(varName, glob(path, recursive=True))
 		elif 'folders' in options:
-			foldersAndFiles = glob(os.path.join(options['in'], '*'))
-			filesOnly = glob(os.path.join(options['in'], '*.*'))
+			foldersAndFiles = glob(os.path.join(options['in'], '*'), recursive=True)
+			filesOnly = glob(os.path.join(options['in'], '*.*'), recursive=True)
 			foldersOnly = list(set(foldersAndFiles) - set(filesOnly))
 
 			self.setData(varName, foldersOnly)
@@ -326,13 +370,15 @@ class TaskRunner(TaskRunnerCore):
 				if len(found[2]) > 1:
 					for item in found[2]:
 						collection.append(item)
-				else:
+				elif len(found[2]):
 					collection.append(found[2][0])
 
 			self.setData(varName, collection)
-		
+
 		if self.getData(varName) and len(self.getData(varName)) == 1:
 			self.setData(varName, self.getData(varName)[0])
+
+		#print('setting', varName, self.getData(varName))
 
 	# manipulation
 	def _extract(self, args):
@@ -358,7 +404,7 @@ class TaskRunner(TaskRunnerCore):
 
 		if isinstance(options['what'], list):
 			for i, item in enumerate(options['what']):
-				varName = options.referenced['what']
+				varName = options.findRef(options['what'])
 				self.data['i'] = i
 				self.data['j'] = i + 1
 				self.data['__' + varName] = item
@@ -367,7 +413,7 @@ class TaskRunner(TaskRunnerCore):
 				self.data[varName][i] = formula
 		else:
 			rendered = self.parseVars(options['formula'])
-			self.setData(options.referenced['what'], rendered)
+			self.setData(options.findRef(options['what']), rendered)
 
 	def _replace(self, args):
 		self.addSyntax('what', '"by"', 'by')
@@ -403,7 +449,7 @@ class TaskRunner(TaskRunnerCore):
 	def _split(self, args):
 		self.addSyntax('what', '"by"', 'delimiter')
 		self.addSyntax('what')
-		self.addDefaults({'delimiter':','})
+		self.addDefaults({'delimiter': ';|,|\\' + os.sep})
 		self.addClauses('as')
 
 		options = self.parseArgs(args, '_split')
@@ -414,7 +460,7 @@ class TaskRunner(TaskRunnerCore):
 		if isinstance(options['what'], bytes):
 			options['what'] = str(options['what'], 'utf8')
 
-		self.setData('selection', options['as'])
+		#self.setData('selection', options['as'])
 		self.setData(options['as'], re.split(options['delimiter'], options['what']))
 
 	def _count(self, args):
@@ -425,10 +471,10 @@ class TaskRunner(TaskRunnerCore):
 		options = self.parseArgs(args, '_count')
 
 		if 'files' in options:
-			self.setData(options['as'], len(glob(os.path.join(options['in'], '*.*'))))
+			self.setData(options['as'], len(glob(os.path.join(options['in'], '*.*'), recursive=True)))
 		elif 'folders' in options:
-			foldersAndFiles = len(glob(os.path.join(options['in'], '*')))
-			filesOnly = len(glob(os.path.join(options['in'], '*.*')))
+			foldersAndFiles = len(glob(os.path.join(options['in'], '*'), recursive=True))
+			filesOnly = len(glob(os.path.join(options['in'], '*.*'), recursive=True))
 			self.setData(options['as'], foldersAndFiles - filesOnly)
 		elif 'what' in options:
 			self.setData(options['as'], len(self.getData(options['what'])))
@@ -506,8 +552,14 @@ class TaskRunner(TaskRunnerCore):
 	def _for(self, args):
 		options = self.addSyntax('"every"', 'collection').parseArgs(args, '_for')
 
-		collection = options['collection']
-		varName = options.findRef(collection)
+		varName = options['collection']
+
+		if isinstance(varName, list):
+			varName = options.findRef(varName)
+		else:
+			varName = varName[1:-1]
+
+		collection = self.getData(self.toPlural(varName))
 
 		if len(collection):
 			if not isinstance(collection, list):
@@ -531,11 +583,9 @@ class TaskRunner(TaskRunnerCore):
 		else:
 			if self.verbose: print('', varName, 'empty, for loop not iterating!')
 
-			#self.states[-1] = False
-
 			while self.cmdLine < len(self.lines) and self.lines[self.cmdLine] != '---':
 				self.cmdLine += 1
-			self.cmdLine -= 1
+			#self.cmdLine -= 1
 
 	def _repeat(self, args=False):
 		if len(self.scopes):
@@ -545,8 +595,8 @@ class TaskRunner(TaskRunnerCore):
 				return False
 
 			self.counters[-1] += 1
-			self.data['i'] += 1
-			self.data['j'] += 1
+			self.data['i'] = self.counters[-1]
+			self.data['j'] = self.data['i'] + 1
 
 			if self.counters[-1] >= len(self.collections[-1]):
 				self.setData(self.selections[-1], self.collections[-1])
@@ -581,3 +631,7 @@ if len(sys.argv) > 1:
 	if TSL.task:
 		print('Running "%s"...\n' % taskFileName)
 		TSL.run()
+
+else:
+	print()
+	

@@ -1,10 +1,13 @@
 import io
 import os
 import re
+import inflect
 import hashlib
 import sys
 from glob import glob
 from pprint import pprint
+
+Inflector = inflect.engine()
 
 # hackaround for tail recursion (mainly for runLine)
 class Recurse(Exception):
@@ -73,8 +76,35 @@ class TaskRunnerArgs(dict):
 		return '<TaskRunnerArguments.%s\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
 
 class TaskRunnerCore:
-	__ordinals = ['_', 'first','second','third','fourth', 'last']
-	__counts = ['_', '_', 'one','two','three','four']
+	__ordinals = {
+		'1st': 1,		'first': 	1,
+		'2nd': 2,		'second': 	2,
+		'3rd': 3,		'third': 	3,
+		'4th': 4,		'fourth': 	4,
+		'5th': 5,		'fifth': 	5,
+		'6th': 6,		'sixth': 	6,
+		'7th': 7,		'seventh': 	7,
+		'8th': 8,		'eigth': 	8,
+		'9th': 9,		'nineth': 	9,
+		'last': -1
+	}
+
+	__numbers = {
+		'none': 0, 		'zero': 	0,
+		'one': 1, 		'single': 	1,
+		'two': 2,
+		'three': 3,
+		'four': 4,
+		'five': 5,
+		'six': 6,
+		'seven': 7,
+		'eight': 8,
+		'nine': 9,
+		'ten': 10,
+		'eleven': 11,
+		'twelve': 12, 	'dozen': 12,
+		'all': -1
+	}
 
 	active = True
 	verbose = False
@@ -82,6 +112,7 @@ class TaskRunnerCore:
 	argumentLabels = []
 	allowedClauses = []
 	allowedOrdinals = []
+	allowedCounts = []
 	defaults = {}
 	plugins = {}
 	parsers = {}
@@ -125,6 +156,8 @@ class TaskRunnerCore:
 		if isinstance(item, str):
 			if item.isdigit() or (item[1:].isdigit() and item[0] == '-'):
 				return int(item) - 1
+			else:
+				return self.__resolveNumber(item)
 		return item
 
 	def __normalizeLiterals(self, args):
@@ -166,6 +199,9 @@ class TaskRunnerCore:
 				parsedArgs[token] = args[i+1]
 				if token in self.allowedOrdinals:
 					args[i+1] = self.__parseNumbers(args[i+1])
+				elif token in self.allowedCounts:
+					args[i+1] = self.__resolveCount(args[i+1])
+
 				upForDeletion.extend([i, i+1])
 				parsedArgs.clauses.append(token)
 			elif self.__isReference(token):
@@ -190,16 +226,31 @@ class TaskRunnerCore:
 
 		return (args, parsedArgs)
 
-	def __resolveOrdinals(self, token, item):
+	def __resolveOrdinals(self, token, ordinal):
 		if token in self.allowedOrdinals:
-			if item in self.__ordinals:
-				if item == 'last':
-					item = -1
-				else:
-					return self.__ordinals.index(item) - 1
+			if ordinal in self.__ordinals.keys():
+				ordinal = self.__ordinals[ordinal]
+				if ordinal > 0:
+					ordinal -= 1
 			else:
-				return self.__parseNumbers(item)
-		return item
+				return self.__parseNumbers(ordinal)
+		return ordinal
+
+	def __resolveNumber(self, nr):
+		if nr in self.__numbers.keys():
+			nr = self.__numbers[nr]
+			if nr > 0:
+				return nr-1
+		return nr
+
+	def __resolveCount(self, nr, collection):
+		if nr in self.__numbers.keys():
+			nr = self.__numbers[nr]
+			if nr > 0:
+				return nr
+			elif nr == -1:
+				return len(collection)
+			return nr
 
 	def registerPlugin(self, name, method):
 		self.plugins[name] = method
@@ -221,6 +272,12 @@ class TaskRunnerCore:
 
 	def pluck(self, dict, *args):
 		return [dict[arg] for arg in args]
+
+	def toPlural(self, word):
+		return Inflector.plural(word)
+
+	def fromPlural(self, word):
+		return Inflector.singular(word)
 
 	def parseVars(self, toParse):
 		results = re.sub(r'(?<!\\)\[([^]]+)\]', lambda match: str(self.getData(match.group()[1:-1])), toParse, re.I)
@@ -262,6 +319,7 @@ class TaskRunnerCore:
 			self.argumentLabels = []
 			self.allowedClauses = []
 			self.allowedOrdinals = []
+			self.allowedCounts = []
 			self.defaults = {}
 
 			self.executeCommand(command)
@@ -284,6 +342,9 @@ class TaskRunnerCore:
 	def allowOrdinals(self, *labels):
 		self.allowedOrdinals.extend(labels)
 		return self
+
+	def allowCounts(self, *labels):
+		self.allowedClauses.extend(labels)
 
 	def parseArgs(self, args, debug=False):
 		# set defó values
@@ -348,6 +409,7 @@ class TaskRunnerCore:
 		self.argumentLabels = []
 		self.allowedClauses = []
 		self.allowedOrdinals = []
+		self.allowedCounts = []
 		self.defaults = {}
 
 		return parsedArgs
@@ -357,6 +419,8 @@ class TaskRunnerCore:
 			#print('_' + command[0], command[1:])
 				eval('self._' + command[0])(command[1:])
 			#print('-'*50, '\n')
+		elif hasattr(self.expressions, '_' + command[0]):
+			print('Expression found!', command[0], command[1:])
 		elif command[0] in self.plugins:
 			self.plugins[command[0]](command[1:])
 		else:

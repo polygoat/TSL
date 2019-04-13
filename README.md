@@ -261,14 +261,16 @@ Splits a string into a collection using delimiter.
 ### for every `<variable>`
 ### ---
 
-*Loops through a collection, populating the variable `i` with the current index. From within the loop, the item of the collection can be accessed using the same variable name. To access the collection from within the loop use the variable `collection`.*
+*Loops through a collection, populating the variable `i` with the current index. From within the loop, the item of the collection can be accessed using the variable name in singular (books -> book, babies -> baby).*
 
-*Always terminate a loop with three consecutive minus signs in a separte line.*
+*If a collection is empty, the for-loop is skipped. This becomes useful to create conditional flows.*
+
+*Always terminate a loop with three consecutive hyphens in a separte line.*
 
 **Example:**
 ```fortran
     in corpus.txt
-    	find all [^\b]+\b[^\b]+ as bigram
+    	find all [^\b]+\b[^\b]+ as bigrams
     	for every [bigram]
     		log "#[i]: [bigram]"
     	---

@@ -43,11 +43,11 @@ contexts:
       scope:  variable.function.tsl
 
   ordinals:
-    - match: '\b(first|second|third|fourth|tenth|last)\b'
+    - match: '\b((1|fir)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)\b'
       scope: variable.function.tsl
 
   counts:
-    - match: '\b(one|two|three|four|ten)\b'
+    - match: '\b(zero|null|n?one|two|three|four|five|six|seven|eight|nine|ten)\b'
       scope: variable.function.tsl
 
   strings:
@@ -72,7 +72,7 @@ contexts:
       scope: constant.character.escape.tsl
 
   comments:
-    - match: '#'
+    - match: '^\s*#'
       scope: punctuation.definition.comment.tsl
       push:
         # This is an anonymous context push for brevity.
@@ -89,7 +89,7 @@ contexts:
     - include: templates
 
   clauses:
-    - match: '\b(in|as|from|to|until|with|by|without|where|between)\b'
+    - match: '\b(in|as|from|to|until|with|by|of|without|where|between)\b'
       scope: keyword.control.tsl
 
   conjunctions:
