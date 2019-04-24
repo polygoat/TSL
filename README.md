@@ -101,7 +101,10 @@ You'll usually see this followed by a `take` or `find all` command*
 ---
 ## Selections
 
-### select words
+### select nth of `[input]`
+*Select *
+
+### select words [of `[input]`][as `<output>`]
 *Selects all words found in the last opened file.*
 
 **Example:**

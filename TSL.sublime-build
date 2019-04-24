@@ -1,4 +1,4 @@
 {
-	"shell_cmd": "python -u \"${packages}\\TSL\\TSL.py\" \"$file\"",
+	"target": "tsl_compile",
 	"selector": "source.tsl"
 }

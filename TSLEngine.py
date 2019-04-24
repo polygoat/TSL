@@ -8,9 +8,9 @@ import math
 import subprocess
 from glob import glob
 from pprint import pprint
-from TSLCore import TaskRunnerCore
+from TSL.TSLCore import TSLCore
 
-class TaskRunnerExpressions:
+class TSLExpressions:
 	def _no(self, collection):
 		return []
 
@@ -36,13 +36,13 @@ class TaskRunnerExpressions:
 	def _entries(self, collection, nr):
 		return collection[0:nr]
 
-class TaskRunner(TaskRunnerCore):
+class TSLEngine(TSLCore):
 	scopes = []
 	counters = []
 	collections = []
 	selections = []
 	states = []
-	expressions = TaskRunnerExpressions()
+	expressions = TSLExpressions()
 
 	templates = {
 		'all': 			r'.*',
@@ -169,7 +169,7 @@ class TaskRunner(TaskRunnerCore):
 	def _save(self, args):
 		self.addSyntax('"as"', 'target')
 		self.addDefaults({ 'target': self.getData('filepath') })
-		target = self.parseArgs(args, '_save')['target']
+		target = self.parseArgs(args, 'save')['target']
 
 		if not 'line' in self.data:
 			self.setData('line', self.getData())
@@ -183,12 +183,15 @@ class TaskRunner(TaskRunnerCore):
 	def _write(self, args):
 		options = self.addSyntax('what').addDefaults({ 'what': 'found' }).parseArgs(args, '_write')
 		what = options['what']
-		return self._add(['[%s]' % options.findRef(what)])
+		ref = options.findRef(what)
+		if ref: 
+			return self._add(['[%s]' % ref])
+		return self._add([what])
 
 	def _add(self, args):
 		self.addSyntax('what', '"to"', 'to')
 		self.addSyntax('what')
-		options = self.parseArgs(args, '_add')
+		options = self.parseArgs(args, 'add')
 		
 		if options['what'] == 'found':
 			content = [found[1] for found in self.getData(options['what'])]
@@ -218,6 +221,8 @@ class TaskRunner(TaskRunnerCore):
 				else:
 					self.data['file'].write('%s' % content)
 
+				self.data['filelen'] += len(content)
+
 				if self.verbose:
 					print(' %s saved in "%s". ' % (self.getData('selection'), self.getData('filename')))
 			except: 
@@ -237,7 +242,7 @@ class TaskRunner(TaskRunnerCore):
 	def _calculate(self, args):
 		self.addClauses('as')
 		self.addDefaults({'as':'result'})
-		options = self.parseArgs(args, '_calculate')
+		options = self.parseArgs(args, 'calculate')
 		result = eval(' '.join(options.arguments))
 		self.setData(options['as'], result)
 
@@ -245,7 +250,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('what')
 		self.addDefaults({ 'as': 'selection' })
 		self.addClauses('as')
-		options = self.parseArgs(args, '_remember')
+		options = self.parseArgs(args, 'remember')
 
 		if not options['as']:
 			options['as'] = options.referenced['what']
@@ -259,7 +264,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addClauses('in')
 		self.addDefaults({'in': self.getData('line')})
 
-		options = self.parseArgs(args, '_findAll')
+		options = self.parseArgs(args, 'findAll')
 
 		stringOrRegEx = self.parseVars(options['what'])
 
@@ -306,15 +311,18 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('"to"', 'to')
 		self.addSyntax('"words"')
 		self.addSyntax('which')
-		self.addClauses('until','to', 'of')
+		self.addClauses('until','to', 'of', 'as')
 		self.allowOrdinals('from','to','until','which')
 		self.addDefaults({'from':0, 'to':None, 'until':None, 'of':self.getData()})
-		options = self.parseArgs(args, '_select')
+		options = self.parseArgs(args, 'select')
 
 		of = options.findRef(options['of']) or options['of']
 
+		if not 'as' in options and of:
+			options['as'] = of
+
 		if 'which' in options:
-			try: self.setData(of, self.getData(of)[options['which']])
+			try: self.setData(options['as'], self.getData(of)[options['which']])
 			except: print(' ! %s has no index %s ! ' % (of, options['which']))
 		elif 'words' in options:
 			self.setData(re.split(r'\b', self.getData()))
@@ -329,18 +337,18 @@ class TaskRunner(TaskRunnerCore):
 			if 'to' in options:	
 				if isinstance(options['to'], str) and not options['to'] is None:
 					match = re.search(options['to'], self.getData(), re.I)
-					
+
 					if match: 	options['to'] = match.span()[0]
 					else: 		options['to'] = None
 
-			self.setData(of, self.getData(of)[options['from']:options['to']])
+			self.setData(options['as'], self.getData(of)[options['from']:options['to']])
 
 	def _take(self, args):
 		self.addSyntax('"lines|files|folders|results"')
-		self.addDefaults({'as':'selection', 'in': self.getData('cwd')})
+		self.addDefaults({'as':'[selection]', 'in': self.getData('cwd')})
 		self.addClauses('as', 'in')		
 
-		options = self.parseArgs(args, '_take')
+		options = self.parseArgs(args, 'take')
 		varName = options.findRef(options['as']) or options['as']
 
 		if 'lines' in options:
@@ -378,14 +386,12 @@ class TaskRunner(TaskRunnerCore):
 		if self.getData(varName) and len(self.getData(varName)) == 1:
 			self.setData(varName, self.getData(varName)[0])
 
-		#print('setting', varName, self.getData(varName))
-
 	# manipulation
 	def _extract(self, args):
 		self.addSyntax('"timecode|duration"')
 		self.addClauses('from', 'as')
 		self.addDefaults({'as':'timecode'})
-		options = self.parseArgs(args, '_extract')
+		options = self.parseArgs(args, 'extract')
 
 		while len(options['from']) < 8:
 			options['from'] += ':00'
@@ -400,7 +406,7 @@ class TaskRunner(TaskRunnerCore):
 
 	def _change(self, args):
 		self.addSyntax('what','"to"','/formula/')
-		options = self.parseArgs(args, '_change')
+		options = self.parseArgs(args, 'change')
 
 		if isinstance(options['what'], list):
 			for i, item in enumerate(options['what']):
@@ -419,7 +425,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('what', '"by"', 'by')
 		self.addDefaults({'in':self.getData('selection')})
 		self.addClauses('in')
-		options = self.parseArgs(args, '_replace')
+		options = self.parseArgs(args, 'replace')
 
 		if not options['in']:
 			data = self.getData('line')
@@ -449,18 +455,17 @@ class TaskRunner(TaskRunnerCore):
 	def _split(self, args):
 		self.addSyntax('what', '"by"', 'delimiter')
 		self.addSyntax('what')
-		self.addDefaults({'delimiter': ';|,|\\' + os.sep})
+		self.addDefaults({'delimiter': r';|,|' + re.escape(os.sep)})
 		self.addClauses('as')
 
-		options = self.parseArgs(args, '_split')
+		options = self.parseArgs(args, 'split')
 
 		if not 'as' in options:
-			options['as'] = options['what']
+			options['as'] = options.findRef(options['what'])
 
 		if isinstance(options['what'], bytes):
 			options['what'] = str(options['what'], 'utf8')
 
-		#self.setData('selection', options['as'])
 		self.setData(options['as'], re.split(options['delimiter'], options['what']))
 
 	def _count(self, args):
@@ -468,7 +473,7 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('what')
 		self.addClauses('as', 'in')
 		self.addDefaults({'in':self.getData('cwd')})
-		options = self.parseArgs(args, '_count')
+		options = self.parseArgs(args, 'count')
 
 		if 'files' in options:
 			self.setData(options['as'], len(glob(os.path.join(options['in'], '*.*'), recursive=True)))
@@ -483,14 +488,14 @@ class TaskRunner(TaskRunnerCore):
 		self.addSyntax('x', '"with"', 'y')
 		self.addClauses('as')
 		self.addDefaults({'as':'selection'})
-		options = self.parseArgs(args, '_combine')
+		options = self.parseArgs(args, 'combine')
 
 		self.setData(options['as'], options['x'] + options['y'])
 
 	def _unique(self, args):
 		self.addSyntax('what')
 		self.addDefaults({'what':'line'})
-		options = self.parseArgs(args, '_unique')
+		options = self.parseArgs(args, 'unique')
 
 		noDupes = []
 		if isinstance(options['what'], str):
@@ -517,24 +522,10 @@ class TaskRunner(TaskRunnerCore):
 			self.getData('line').reverse()
 		return what.reverse()
 
-	# def _delete(self, filePath=''):
-	# 	if not self.isActive(): return False
-	# 	if len(filePath):
-	# 		filePath = self.parseVars(filePath)
-	
-	# 		if os.path.exists(filePath):
-	# 			os.remove(filePath)
-	# 		else:
-	# 			print(" File %s doesn't exist." % filePath)
-	# 	else:
-	# 		for lineNr, line, data in self.data['found']:
-	# 			print(self.data['selection'], self.getData())
-	# 			#del self.getData()[lineNr]
-
 	def _remove(self, args):
 		self.addSyntax('what')
 		self.addSyntax('"empty"', '"lines|results|folders|files"')
-		what = self.parseArgs(args, '_remove')['what']
+		what = self.parseArgs(args, 'remove')['what']
 
 		if what == 'lines':
 			lines = self.getData('line')
@@ -585,7 +576,6 @@ class TaskRunner(TaskRunnerCore):
 
 			while self.cmdLine < len(self.lines) and self.lines[self.cmdLine] != '---':
 				self.cmdLine += 1
-			#self.cmdLine -= 1
 
 	def _repeat(self, args=False):
 		if len(self.scopes):
@@ -616,22 +606,4 @@ class TaskRunner(TaskRunnerCore):
 				self.setData(self.data['selection'], self.data['collection'][self.counters[-1]])
 		else:
 			self.cmdLine += 1
-	
-if len(sys.argv) > 1:
-	taskFileName = sys.argv[1]
-
-	TSL = TaskRunner(taskFileName)
-
-	TSLPlugins = glob('tsl-plugins/*.py')
-
-	if len(TSLPlugins):
-		for TSLPlugin in TSLPlugins:
-			exec(open(TSLPlugin, 'r', encoding='utf8').read())
-	
-	if TSL.task:
-		print('Running "%s"...\n' % taskFileName)
-		TSL.run()
-
-else:
-	print()
 	

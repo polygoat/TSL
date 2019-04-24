@@ -1,6 +1,6 @@
 %YAML 1.2
 ---
-name: Text Scraping Language (for TaskRunner)
+name: Text Scraping Language
 description: Intuitive Text Scraping Language parser for Python
 scopeName: source.tsl
 fileTypes: [tsl]
@@ -24,7 +24,6 @@ contexts:
     - include: counts
     - include: strings
     - include: templates
-    - include: references
     - include: clauses
     - include: conjunctions
     - include: keywords
@@ -35,20 +34,20 @@ contexts:
     # strings in YAML. When using single quoted strings, only single quotes
     # need to be escaped: this is done by using two single quotes next to each
     # other.
-    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\b'
+    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\s'
       scope: entity.name.function.tsl
 
   numbers:
     - match: '\b(-)?[0-9.]+\b'
-      scope:  variable.function.tsl
+      scope:  string.quoted.double.tsl
 
   ordinals:
-    - match: '\b((1|fir)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)\b'
-      scope: variable.function.tsl
+    - match: '\s(but-last|(1|fir)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)\b'
+      scope: string.quoted.double.tsl
 
   counts:
-    - match: '\b(zero|null|n?one|two|three|four|five|six|seven|eight|nine|ten)\b'
-      scope: variable.function.tsl
+    - match: '\s(zero|null|n?one|two|three|four|five|six|seven|eight|nine|ten)\b'
+      scope: string.quoted.double.tsl
 
   strings:
     # Strings begin and end with quotes, and use backslashes as an escape
@@ -68,7 +67,7 @@ contexts:
       pop: true
 
   templates:
-    - match: '\[[a-zA-Z\_0-9]+\]'
+    - match: '\[[a-zA-Z\_0-9\-]+\]'
       scope: constant.character.escape.tsl
 
   comments:
@@ -80,16 +79,8 @@ contexts:
         - match: $\n?
           pop: true
 
-  references:
-    - match: '\bas ([a-zA-Z]+)\b.+\1'
-      scope: punctuation.definition.comment.tsl
-    - include: clauses
-    - include: conjunctions
-    - include: keywords
-    - include: templates
-
   clauses:
-    - match: '\b(in|as|from|to|until|with|by|of|without|where|between)\b'
+    - match: '\b(in|as|from|to|until|with|by|of|without|where|between)\s'
       scope: keyword.control.tsl
 
   conjunctions:
@@ -97,5 +88,5 @@ contexts:
       scope: punctuation.definition.comment.tsl
 
   keywords:
-    - match: '\b(lines|files|folders|results|all|timecodes?|filenames?|extensions?)\b'
+    - match: '\b(lines|files|folders|results|all|timecodes?|filenames?|extensions?)\s'
       scope: string.quoted.double

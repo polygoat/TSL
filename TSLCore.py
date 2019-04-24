@@ -1,13 +1,70 @@
 import io
 import os
 import re
-import inflect
 import hashlib
 import sys
 from glob import glob
 from pprint import pprint
 
-Inflector = inflect.engine()
+class Inflector:
+	__irregulars = {
+			"child": "children",
+			"goose": "geese",
+			"man": "men",
+			"woman": "women",
+			"tooth": "teeth",
+			"foot": "feet",
+			"mouse": "mice",
+			"person": "people"
+		}
+
+	def singular(self, word):
+		if word in self.__irregulars.values():
+			rev = {v: k for k, v in self.__irregulars.items()}
+			return rev[word]
+
+		if word.endswith('ies'):
+			return word[0:-3] + 'y'
+		elif word.endswith('ae'):
+			return word[0:-2] + 'a'
+		elif word.endswith('oes'):
+			if len(word) > 4:
+				return word[0:-2]
+			return word[0:-1]
+		elif word.endswith('ives'):
+			return word[0:-3] + 'fe'
+		elif word.endswith('lves'):
+			return word[0:-3] + 'f'
+		elif word.endswith('lves'):
+			return word[0:-3] + 'f'
+		elif word.endswith('ces'):
+			return word[0:-3] + 'x'
+		elif word.endswith('s'):
+			return word[0:-1]
+
+		return word
+
+	def plural(self, word):
+		if word in self.__irregulars.keys():
+			return self.__irregulars[word]
+		elif word.endswith('as'):
+			return word + 'ses'
+		elif word[-2:] in ['ss','sh','ch'] or word.endswith('o') or word[-1] in ['s','x','z']:
+			return word + 'es'
+		elif word.endswith('f'):
+			return word[0:-1] + 'ves'
+		elif word.endswith('fe'):
+			return word[0:-2] + 'ves'
+		elif word.endswith('is'):
+			return word[0:-2] + 'es'
+		elif word.endswith('on'):
+			return word[0:-2] + 'a'
+		elif word.endswith('y') and word[-2] not in ['a','e','o','u']:
+			return word[0:-1] + 'ies' 
+
+		return word + 's'
+
+Inflector = Inflector()
 
 # hackaround for tail recursion (mainly for runLine)
 class Recurse(Exception):
@@ -29,7 +86,7 @@ def tail_recursive(f):
                 continue
     return decorated
 
-class TaskRunnerArgs(dict):
+class TSLArgs(dict):
 	def __init__(self, args, defaults={}, debug=''):
 		self.arguments = []
 		self.parsed = {}
@@ -73,20 +130,21 @@ class TaskRunnerArgs(dict):
 		return False
 
 	def __str__(self):
-		return '<TaskRunnerArguments.%s\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
+		return '<TSLArguments.%s\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
 
-class TaskRunnerCore:
+class TSLCore:
 	__ordinals = {
-		'1st': 1,		'first': 	1,
-		'2nd': 2,		'second': 	2,
-		'3rd': 3,		'third': 	3,
-		'4th': 4,		'fourth': 	4,
-		'5th': 5,		'fifth': 	5,
-		'6th': 6,		'sixth': 	6,
-		'7th': 7,		'seventh': 	7,
-		'8th': 8,		'eigth': 	8,
-		'9th': 9,		'nineth': 	9,
-		'last': -1
+		'1st': 		1,		'first': 	1,
+		'2nd': 		2,		'second': 	2,
+		'3rd': 		3,		'third': 	3,
+		'4th': 		4,		'fourth': 	4,
+		'5th': 		5,		'fifth': 	5,
+		'6th': 		6,		'sixth': 	6,
+		'7th': 		7,		'seventh': 	7,
+		'8th': 		8,		'eigth': 	8,
+		'9th': 		9,		'nineth': 	9,
+		'last': 	-1,
+		'but-last': -2
 	}
 
 	__numbers = {
@@ -113,6 +171,7 @@ class TaskRunnerCore:
 	allowedClauses = []
 	allowedOrdinals = []
 	allowedCounts = []
+
 	defaults = {}
 	plugins = {}
 	parsers = {}
@@ -136,7 +195,7 @@ class TaskRunnerCore:
 				with io.open(taskFilePath, 'r', encoding='utf8') as taskFile:
 					self.task = taskFile.read()
 			elif taskFilePath.endswith('.py'):
-				print('! You are trying to run a Python script using TaskRunner. If in Sublime, please change your Tools > Build System to Python !')
+				print('! You are trying to run a Python script using TSL. Please change your Tools > Build System to Python !')
 			else:
 				print('! This is not a valid task file !')
 
@@ -197,16 +256,17 @@ class TaskRunnerCore:
 				parsedArgs.literals.append(token[1:-1])
 			elif token in self.allowedClauses:
 				parsedArgs[token] = args[i+1]
-				if token in self.allowedOrdinals:
-					args[i+1] = self.__parseNumbers(args[i+1])
-				elif token in self.allowedCounts:
-					args[i+1] = self.__resolveCount(args[i+1])
 
 				upForDeletion.extend([i, i+1])
 				parsedArgs.clauses.append(token)
 			elif self.__isReference(token):
 				args[i] = self.getData(token[1:-1])
 				parsedArgs.referenced[token[1:-1]] = args[i]
+			
+			if token in self.allowedOrdinals:
+				args[i+1] = self.__resolveOrdinals(token, args[i+1])
+			elif token in self.allowedCounts:
+				args[i+1] = self.__resolveCount(args[i+1])
 
 		upForDeletion.reverse()
 
@@ -280,7 +340,15 @@ class TaskRunnerCore:
 		return Inflector.singular(word)
 
 	def parseVars(self, toParse):
-		results = re.sub(r'(?<!\\)\[([^]]+)\]', lambda match: str(self.getData(match.group()[1:-1])), toParse, re.I)
+		results = toParse + r''
+		matches = re.findall(r'(?<!\\)\[([^]]+)\]', toParse, re.I)
+
+		for match in matches:
+			try:
+				results = re.sub(r'(?<!\\)\[%s\]' % match, str(self.getData(match)), results, re.I)
+			except: 
+				continue
+
 		return results
 
 	def getData(self, name=False):
@@ -310,7 +378,7 @@ class TaskRunnerCore:
 		command = self.lines[cmdLine].strip()
 		self.cmdLine = cmdLine + 1
 
-		command = re.split(r'[\s\t]+', command.strip())
+		command = re.split(r'[\s\t]+', command)
 
 		if not command[0].startswith('#') and len(command):
 			if command[0][0:3] == '---':
@@ -348,7 +416,7 @@ class TaskRunnerCore:
 
 	def parseArgs(self, args, debug=False):
 		# set defó values
-		parsedArgs = TaskRunnerArgs(args, self.defaults, debug)
+		parsedArgs = TSLArgs(args, self.defaults, debug)
 
 		args = self.__normalizeLiterals(args)		
 		args, parsedArgs = self.__extractClauses(args, parsedArgs)
@@ -397,8 +465,6 @@ class TaskRunnerCore:
 						elif self.__isReference(token):
 							parsedArgs[token] = self.getData(args[i])
 							parsedArgs.referenced[token] = args[i]
-						#else:
-						#	parsedArgs.referenced[token] = parsedArgs.findRef(args[i])
 
 					parsedArgs[token] = args[i]
 				elif '|' in token:
