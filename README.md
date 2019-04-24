@@ -1,9 +1,9 @@
 # TSL – Text Scraping Language
-Python-based Sublime Text build for processing of a scraping language in pseudo-code
+Sublime Text plugin for processing of a scraping language in pseudo-code
 
 *The TSL Sublime Text package allows you to write and execute pseudo-code style language to process text files with Regular expressions and simple logic. This gives an easy entry to data mining to non-programmers.*
 
-Once installed via Sublime Text's **Package Control**, files with the extension `.tsl` will automatically get **syntax-highlighting** and a **build system**. Force building by choosing **`Tools > Build System > TSL`** from the ST3 menu.
+Once dropped in your Sublime Text's **package directory**, files with the extension `.tsl` will automatically get **syntax-highlighting** and a **build system** to run them. Force building by choosing **`Tools > Build System > TSL`** from the ST3 menu.
 
 ## Example:
 ![Sublime Text Syntax Highlighting](https://raw.githubusercontent.com/polygoat/TSL/master/preview.png "Sublime Text Syntax Highlighting")
@@ -24,13 +24,8 @@ Most commands support optional clauses like `as ...` (storage variable) or `in .
 A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context. To reference variables rather than strings use square brackets. `log something` will log the string "something", while `log [something]` will log the content of the variable called _something_.
 
 ---
-# Prerequisites
-You need Python >= 3 installed and added to your PATH variable to run TSL scripts.
-
-In addition, TSL relies on the Python modules glob and pprint. Install them like this:
-```bash
-pip install glob pprint
-```
+# Setup
+drop the TSL folder into `%USERPROFILE%/AppData/Roaming/Sublime Text 3/Packages` to install the plugin.
 
 ---
 # Available Commands
