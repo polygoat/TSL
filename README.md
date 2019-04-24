@@ -13,7 +13,7 @@ Once dropped in your Sublime Text's **package directory**, files with the extens
 ---
 # Index
 ### [How does it work?](#how-does-it-work)
-### [Prerequisites](#prerequisites)
+### [Setup](#setup)
 ### [Available Commands](#available-commands)
 ### [Templating](#templating)
 ---
