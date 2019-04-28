@@ -96,8 +96,15 @@ You'll usually see this followed by a `take` or `find all` command*
 ---
 ## Selections
 
-### select nth of `[input]`
-*Select *
+### select nth [of `[input]`]
+*Selects a specific item of a collection, given its index.*
+
+**Example:**
+```fortran
+    in bigrams.txt   
+        select 4th
+```
+
 
 ### select words [of `[input]`][as `<output>`]
 *Selects all words found in the last opened file.*
@@ -108,7 +115,7 @@ You'll usually see this followed by a `take` or `find all` command*
     	select words
 ```
 
-### select from *`<string | RegEx | int>`* to *`<string | RegEx | int>`*
+### select [from *`<string | RegEx | int>`*] [to *`<string | RegEx | int>`*]
 *Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number. Note that we start counting with 1 to keep it natural*
 
 **Example:**
@@ -116,6 +123,7 @@ You'll usually see this followed by a `take` or `find all` command*
     select from "accessibilityApp" to "[v:"
     select from \s to \s
     select from 1 to "[v:samsung.tvSearchAndPlay.Genres:drama]"
+    select two of [bigrams]
 ```
 
 ### select from `<string | RegEx | integer>`
@@ -133,9 +141,10 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    select until "dateTime"
-    select until \W
-    select until 370  
+    select to "dateTime"
+    select to \W
+    select to 5th  
+    select to 370  
 ```
 
 ---
@@ -276,6 +285,8 @@ Splits a string into a collection using delimiter.
 
 ### run `path/to/script.tsl`
 *Runs another TSL file*
+
+The external TSL file will receive the same scope as inlined code.
 
 ---
 # Templating
