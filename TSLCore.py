@@ -4,96 +4,78 @@ import re
 import hashlib
 import sys
 from glob import glob
-from pprint import pprint
+from TSL.TSLHelpers import *
 
-class Inflector:
-	__irregulars = {
-			"child": "children",
-			"goose": "geese",
-			"man": "men",
-			"woman": "women",
-			"tooth": "teeth",
-			"foot": "feet",
-			"mouse": "mice",
-			"person": "people"
-		}
+class TSLCollection(list):
+	separator = '\n'
+	lines = []
+	lineNrs = []
+	results = []
 
-	def singular(self, word):
-		if word in self.__irregulars.values():
-			rev = {v: k for k, v in self.__irregulars.items()}
-			return rev[word]
+	def __init__(self, elements):
+		self.setTo(elements)
 
-		if word.endswith('ies'):
-			return word[0:-3] + 'y'
-		elif word.endswith('ae'):
-			return word[0:-2] + 'a'
-		elif word.endswith('oes'):
-			if len(word) > 4:
-				return word[0:-2]
-			return word[0:-1]
-		elif word.endswith('ives'):
-			return word[0:-3] + 'fe'
-		elif word.endswith('lves'):
-			return word[0:-3] + 'f'
-		elif word.endswith('lves'):
-			return word[0:-3] + 'f'
-		elif word.endswith('ces'):
-			return word[0:-3] + 'x'
-		elif word.endswith('s'):
-			return word[0:-1]
+	def __len__(self):
+		return len(self.results)
 
-		return word
+	def __str__(self):
+		results = re.sub(r'\s*,\s*', ',', str(self.results))
+		if len(results) > 10:
+				results = results[0:10] + '...' + results[-6:-1] + ']'
+		return '<TSLColl(%d) %s>' % (len(self.results), results)
 
-	def plural(self, word):
-		if word in self.__irregulars.keys():
-			return self.__irregulars[word]
-		elif word.endswith('as'):
-			return word + 'ses'
-		elif word[-2:] in ['ss','sh','ch'] or word.endswith('o') or word[-1] in ['s','x','z']:
-			return word + 'es'
-		elif word.endswith('f'):
-			return word[0:-1] + 'ves'
-		elif word.endswith('fe'):
-			return word[0:-2] + 'ves'
-		elif word.endswith('is'):
-			return word[0:-2] + 'es'
-		elif word.endswith('on'):
-			return word[0:-2] + 'a'
-		elif word.endswith('y') and word[-2] not in ['a','e','o','u']:
-			return word[0:-1] + 'ies' 
+	def applyResults(self):
+		return TSLCollection(self.results)
 
-		return word + 's'
+	def getFiltered(self, which):
+		return [element for id, element in enumerate(which, start=1) if id in self.lineNrs]
 
-Inflector = Inflector()
+	def setTo(self, elements):
+		self.clear()
+		self.lines.clear()
+		self.lineNrs.clear()
+		self.results.clear()
 
-# hackaround for tail recursion (mainly for runLine)
-class Recurse(Exception):
-    def __init__(self, *args, **kwargs):
-        self.args = args
-        self.kwargs = kwargs
+		for i, element in enumerate(elements, start=1):
+			self.append(element)
+			self.lines.append(element)
+			self.results.append(element)
+			self.lineNrs.append(i)
+		return self
 
-def recurse(*args, **kwargs):
-    raise Recurse(*args, **kwargs)
-        
-def tail_recursive(f):
-    def decorated(*args, **kwargs):
-        while True:
-            try:
-                return f(*args, **kwargs)
-            except Recurse as r:
-                args = r.args
-                kwargs = r.kwargs
-                continue
-    return decorated
+	def join(self):
+		return self.separator.join(self)
+
+	def filter(self, filterMethod):
+		self.lineNrs = []
+		self.results = []
+
+		def createResults(entry, id):
+			result = filterMethod(entry, id)
+			if result:
+				self.lineNrs.append(id)
+				if isinstance(result, list) and len(result) == 1:
+					result = result[0]
+				self.results.append(result)
+
+		for id, element in enumerate(self, start=1):
+			createResults(element, id)
+			
+		return self
 
 class TSLArgs(dict):
+	hooks = {}
+
 	def __init__(self, args, defaults={}, debug=''):
 		self.arguments = []
 		self.parsed = {}
 		self.referenced = {}
+		self.toReference = {}
 		self.literals = []
 		self.clauses = []
+		self.counted = []
 		self.method = debug
+		self.intercepted = False
 
 		self.update(defaults)
 		for k,v in defaults.items():
@@ -123,16 +105,14 @@ class TSLArgs(dict):
 
 		return delimiter.join(propList)
 
-	def findRef(self, reference):
-		for ref, value in self.referenced.items():
-			if value == reference:
-				return ref
-		return False
-
 	def __str__(self):
-		return '<TSLArguments.%s\n\t%s\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '))
+		return '<TSLArguments.%s\n\t%s\n\tsyntax="%s"\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n\tcounted[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), ' '.join(self.matchedPattern), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '), ','.join(self.counted))
 
 class TSLCore:
+	__logger = {
+		'log': print
+	}
+
 	__ordinals = {
 		'1st': 		1,		'first': 	1,
 		'2nd': 		2,		'second': 	2,
@@ -144,7 +124,7 @@ class TSLCore:
 		'8th': 		8,		'eigth': 	8,
 		'9th': 		9,		'nineth': 	9,
 		'last': 	-1,
-		'but-last': -2
+		'butlast': -2
 	}
 
 	__numbers = {
@@ -175,6 +155,7 @@ class TSLCore:
 	defaults = {}
 	plugins = {}
 	parsers = {}
+	hooks = {}
 
 	cmdLine = 0
 	fileName = ''
@@ -182,22 +163,25 @@ class TSLCore:
 
 	lines = {}
 	data = {
-		'cwd': '.', 'loops': 0, 'selection': False,
 		'userpath': os.path.expanduser('~'),
-		'pythonpath': sys.executable,
-		'testList': ['a', 'b', 'c', 'd', 'e', 'f', 'g']
 	}
 
 	def __init__(self, taskFilePath=False):
+		self.data['cwd'] = '.'
+		self.data['loops'] = 0
+		self.data['selection'] = False
+		self.data['pythonpath'] = sys.executable
+		self.data['testList'] = ['a', 'b', 'c', 'd', 'e', 'f', 'g']
+
 		if taskFilePath:
 			if taskFilePath.endswith('.tsl'):
 				self.fileName = taskFilePath
 				with io.open(taskFilePath, 'r', encoding='utf8') as taskFile:
 					self.task = taskFile.read()
 			elif taskFilePath.endswith('.py'):
-				print('! You are trying to run a Python script using TSL. Please change your Tools > Build System to Python !')
+				self.log('! You are trying to run a Python script using TSL. Please change your Tools > Build System to Python !')
 			else:
-				print('! This is not a valid task file !')
+				self.log('! This is not a valid task file !')
 
 	def __isLiteral(self, anyString):
 		if not isinstance(anyString, str): return False
@@ -246,8 +230,14 @@ class TSLCore:
 
 	def __extractClauses(self, args, parsedArgs):
 		upForDeletion = []
+		lastToken = False
 
 		for i, token in enumerate(args):
+			if token in self.allowedOrdinals:
+				args[i+1] = self.__resolveOrdinals(token, args[i+1], parsedArgs)
+			if token in self.allowedCounts:
+				args[i+1] = self.__resolveCounts(token, args[i+1], parsedArgs)
+			
 			if self.__isLiteral(token):
 				parsed = self.parseVars(token)[1:-1]
 				if parsed != token:
@@ -256,17 +246,16 @@ class TSLCore:
 				parsedArgs.literals.append(token[1:-1])
 			elif token in self.allowedClauses:
 				parsedArgs[token] = args[i+1]
-
 				upForDeletion.extend([i, i+1])
 				parsedArgs.clauses.append(token)
+				lastToken = token
 			elif self.__isReference(token):
 				args[i] = self.getData(token[1:-1])
-				parsedArgs.referenced[token[1:-1]] = args[i]
+				if lastToken:
+					parsedArgs.referenced[lastToken] = token[1:-1]
+				else:
+					parsedArgs.toReference[i] = token[1:-1]
 			
-			if token in self.allowedOrdinals:
-				args[i+1] = self.__resolveOrdinals(token, args[i+1])
-			elif token in self.allowedCounts:
-				args[i+1] = self.__resolveCount(args[i+1])
 
 		upForDeletion.reverse()
 
@@ -286,14 +275,12 @@ class TSLCore:
 
 		return (args, parsedArgs)
 
-	def __resolveOrdinals(self, token, ordinal):
+	def __resolveOrdinals(self, token, ordinal, parsedArgs):
 		if token in self.allowedOrdinals:
 			if ordinal in self.__ordinals.keys():
 				ordinal = self.__ordinals[ordinal]
 				if ordinal > 0:
 					ordinal -= 1
-			else:
-				return self.__parseNumbers(ordinal)
 		return ordinal
 
 	def __resolveNumber(self, nr):
@@ -301,6 +288,14 @@ class TSLCore:
 			nr = self.__numbers[nr]
 			if nr > 0:
 				return nr-1
+		return nr
+
+	def __resolveCounts(self, token, nr, parsedArgs):
+		if token in self.allowedCounts:
+			if isinstance(nr, str):
+				if nr in self.__numbers.keys():
+					nr = self.__numbers[nr]
+					parsedArgs.counted.append(token)
 		return nr
 
 	def __resolveCount(self, nr, collection):
@@ -311,6 +306,14 @@ class TSLCore:
 			elif nr == -1:
 				return len(collection)
 			return nr
+
+	def setLogger(self, container):
+		self.__logger = container
+		return self
+
+	def log(self, message):
+		self.__logger.log(message)
+		return self
 
 	def registerPlugin(self, name, method):
 		self.plugins[name] = method
@@ -412,7 +415,7 @@ class TSLCore:
 		return self
 
 	def allowCounts(self, *labels):
-		self.allowedClauses.extend(labels)
+		self.allowedCounts.extend(labels)
 
 	def parseArgs(self, args, debug=False):
 		# set defó values
@@ -458,19 +461,26 @@ class TSLCore:
 						if key in parsedArgs.parsed:
 							args[i] = parsedArgs.parsed[key][1:-1]
 					else:
-						args[i] = self.__resolveOrdinals(token, args[i])
+						args[i] = self.__resolveOrdinals(token, args[i], parsedArgs)
+						args[i] = self.__resolveCounts(token, args[i], parsedArgs)
 
 						if isinstance(args[i], int):
 							parsedArgs[token] = args[i]
 						elif self.__isReference(token):
 							parsedArgs[token] = self.getData(args[i])
 							parsedArgs.referenced[token] = args[i]
+							parsedArgs.referenced['___' + token] = args[i]
 
 					parsedArgs[token] = args[i]
 				elif '|' in token:
 					parsedArgs[args[i]] = True
 
 		parsedArgs.arguments = args
+		parsedArgs.matchedPattern = matchedPattern or []
+
+		if len(parsedArgs.toReference):
+			for i, ref in parsedArgs.toReference.items():
+				parsedArgs.referenced[matchedPattern[i]] = ref
 
 		self.argumentLabels = []
 		self.allowedClauses = []
@@ -478,19 +488,21 @@ class TSLCore:
 		self.allowedCounts = []
 		self.defaults = {}
 
+		if parsedArgs.method in TSLArgs.hooks.keys():
+			parsedArgs.intercepted = True
+			TSLArgs.hooks[parsedArgs.method](parsedArgs)
+
 		return parsedArgs
 
 	def executeCommand(self, command):
 		if hasattr(self, '_' + command[0]):
-			#print('_' + command[0], command[1:])
 				eval('self._' + command[0])(command[1:])
-			#print('-'*50, '\n')
 		elif hasattr(self.expressions, '_' + command[0]):
-			print('Expression found!', command[0], command[1:])
+			self.log('Expression found!', command[0], command[1:])
 		elif command[0] in self.plugins:
 			self.plugins[command[0]](command[1:])
 		else:
-			print(' !', command[0], 'is no valid command !')
+			self.log(' !', command[0], 'is no valid command !')
 
 	def parse(self, task):
 		isTask = re.findall(r'\{\n\s*([\w\W]+)\s*\n\}', task)
@@ -498,7 +510,7 @@ class TSLCore:
 		if len(isTask):
 			return re.split(r'\s*[\n\r]\s*|\s*and\s*', isTask[0])
 
-		print(' ! No viable task found !')
+		self.log(' ! No viable task found !')
 		return False
 
 	def run(self):
@@ -507,6 +519,6 @@ class TSLCore:
 		if task:
 			self.lines = task
 			self.runLine(0)
-			print('')
+			self.log('')
 		
 		return self

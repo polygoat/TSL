@@ -29,11 +29,6 @@ contexts:
     - include: keywords
 
   directives:
-    # Keywords are if, else for and while.
-    # Note that blackslashes don't need to be escaped within single quoted
-    # strings in YAML. When using single quoted strings, only single quotes
-    # need to be escaped: this is done by using two single quotes next to each
-    # other.
     - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\s'
       scope: entity.name.function.tsl
 
@@ -42,16 +37,14 @@ contexts:
       scope:  string.quoted.double.tsl
 
   ordinals:
-    - match: '\s(but-last|(1|fir)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)\b'
-      scope: string.quoted.double.tsl
+    - match: '(\s+|\b|^)((but-la|fir|la)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)(\s+|$)'
+      scope:  string.quoted.double.tsl
 
   counts:
-    - match: '\s(zero|null|n?one|two|three|four|five|six|seven|eight|nine|ten)\b'
+    - match: '(\s+|\b|^)(zero|null|n?one|two|three|four|five|six|seven|eight|nine|ten|dozen)\b'
       scope: string.quoted.double.tsl
 
   strings:
-    # Strings begin and end with quotes, and use backslashes as an escape
-    # character.
     - match: '"'
       scope: punctuation.definition.string.begin.tsl
       push: inside_string

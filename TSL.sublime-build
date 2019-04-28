@@ -1,4 +1,5 @@
 {
+	"file_patterns": ["*.tsl"],
 	"target": "tsl_compile",
 	"selector": "source.tsl"
 }

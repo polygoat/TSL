@@ -284,7 +284,7 @@ Templates are enclosed in square brackets and can appear in quoted strings, file
 ```fortran
 {
     remember "\CommNetwork" as domain
-    in usernames.txt
+    in user.txt
         find all \b[domain][^:]: as user
         for every [user]
             select from 0 to -1

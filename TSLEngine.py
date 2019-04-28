@@ -1,4 +1,4 @@
-#pip install timecode glob pprint inflect
+#pip install glob3
 import io
 import os
 import re
@@ -7,34 +7,33 @@ import json
 import math
 import subprocess
 from glob import glob
-from pprint import pprint
-from TSL.TSLCore import TSLCore
+from TSL.TSLCore import TSLCore, TSLCollection
 
-class TSLExpressions:
-	def _no(self, collection):
-		return []
+# class TSLExpressions:
+# 	def _no(self, collection):
+# 		return []
 
-	def _number(self, collection, nr):
-		return collection[nr]
+# 	def _number(self, collection, nr):
+# 		return collection[nr]
 
-	def _all(self, collection): 
-		return collection
+# 	def _all(self, collection): 
+# 		return collection
 
-	def _odd(self, collection):
-		return [entry for i, entry in enumerate(collection) if (i+1) % 2]
+# 	def _odd(self, collection):
+# 		return [entry for i, entry in enumerate(collection) if (i+1) % 2]
 
-	def _other(self, collection): 	
-		return self._even(collection)
+# 	def _other(self, collection): 	
+# 		return self._even(collection)
 
-	def _even(self, collection): 	
-		return self._every(collection, 2)
+# 	def _even(self, collection): 	
+# 		return self._every(collection, 2)
 
-	def _every(self, collection, ordinal=1):
-		args = [ordinal]
-		return [entry for i, entry in enumerate(collection) if not (i+1) % ordinal]
+# 	def _every(self, collection, ordinal=1):
+# 		args = [ordinal]
+# 		return [entry for i, entry in enumerate(collection) if not (i+1) % ordinal]
 
-	def _entries(self, collection, nr):
-		return collection[0:nr]
+# 	def _entries(self, collection, nr):
+# 		return collection[0:nr]
 
 class TSLEngine(TSLCore):
 	scopes = []
@@ -42,7 +41,7 @@ class TSLEngine(TSLCore):
 	collections = []
 	selections = []
 	states = []
-	expressions = TSLExpressions()
+	#expressions = TSLExpressions()
 
 	templates = {
 		'all': 			r'.*',
@@ -55,33 +54,37 @@ class TSLEngine(TSLCore):
 		return str(timeCode).replace('.',delimiter)
 
 	def _log(self, args):
-		options = self.addSyntax('what').parseArgs(args, '_log')
+		options = self.addSyntax('what').parseArgs(args, 'log')
+		
 		what = options['what']
-		whatReference = options.findRef(what)
+		whatReference = options.referenced.get('what', False)
 
 		if isinstance(what, dict):
-			print(' %s:' % options.referenced['what'])
-			pprint(what)
-			print('\n')
+			self.log(' %s:' % options.referenced.get('what', 'what'))
+			self.log(what)
+			self.log('\n')
 		elif whatReference:
 			if len(whatReference):
 				try:
-					print(' %s: %s' % (whatReference, json.dumps(what, indent=4, sort_keys=True)))
+					self.log(' %s: %s' % (whatReference, json.dumps(what, indent=4, sort_keys=True)))
 				except UnicodeEncodeError:
-					print(' ! %s could not be encoded for logging !' % whatReference) 
+					self.log(' ! %s could not be encoded for logging !' % whatReference) 
 			else:
-				print('', what)
+				self.log(' ' + what)
 		elif len(what): 
-			try:
-				print('', what)
-			except:
-				print(' ! {%s} could not be encoded for logging !' % self.lines[self.cmdLine-1]) 
+			#try:
+			self.log(' ' + what)
+			#except:
+			#	self.log(' ! {%s} could not be encoded for logging !' % self.lines[self.cmdLine-1]) 
 		else:
-			print('')
+			self.log('')
 
 	# clauses
 	def _in(self, args):
-		filePath = self.addSyntax('filePath').parseArgs(args, '_in')['filePath']
+		options = self.addSyntax('filePath').parseArgs(args, 'in')
+		if options.intercepted: return False
+		
+		filePath = options['filePath']
 
 		self.setData('filepath', filePath)
 		self.setData('filename', os.path.basename(filePath))
@@ -90,7 +93,7 @@ class TSLEngine(TSLCore):
 			self.setData('cwd', filePath)
 			if not os.path.isdir(filePath):
 				try:		os.mkdir(filePath)
-				except:		print(" ! Couldn't create directory %s !" % filePath)
+				except:		self.log(" ! Couldn't create directory %s !" % filePath)
 			return
 
 		if os.path.exists(filePath):
@@ -102,7 +105,7 @@ class TSLEngine(TSLCore):
 				if extension in self.parsers:
 					self.data['filecontent'] = self.parsers[extension].parse(self.data['filecontent'])
 			except:
-				print(' ! "%s" could not be opened !' % filePath)
+				self.log(' ! "%s" could not be opened !' % filePath)
 		else:
 			fileDir = os.path.dirname(filePath)
 			dirName = os.path.dirname(fileDir).strip()
@@ -113,58 +116,55 @@ class TSLEngine(TSLCore):
 			if len(dirName):
 				if not os.path.exists(dirName):
 					try: 	os.makedirs(dirName, exist_ok=True)
-					except: print(' ! Could not create directory tree %s !' % (dirName))
+					except: self.log(' ! Could not create directory tree %s !' % (dirName))
 
 			self.data['file'] = io.open(filePath, 'w', encoding='utf8')
 			self.data['filecontent'] = ''
 			self.data['filelen'] = 0
 
 		try:
-			self.data['line'] = re.split(r'[\n\r]', self.data['filecontent'])
+			self.data['collection'] = TSLCollection(re.split(r'[\n\r]', self.data['filecontent']))
 
-			if len(self.data['line']) == 1 and not len(self.data['line'][0]):
-				self.data['line'] = []
+			if len(self.data['collection']) == 1 and not len(self.data['collection'][0]):
+				self.data['collection'] = []
 				self.data['filelen'] = 0
 			else:
-				self.data['filelen'] = len(self.data['line'])
+				self.data['filelen'] = len(self.data['collection'])
 
 		except:
-			self.data['line'] = []
+			self.data['collection'] = []
 			self.data['filelen'] = 0
 
-		if self.verbose: print(' %s line(s) read.' % len(self.data['line']))
+		if self.verbose: self.log(' %s line(s) read.' % len(self.data['collection']))
 
 	def _as(self, args):
-		options = self.addSyntax('varName').parseArgs(args)
+		options = self.addSyntax('varName').parseArgs(args, 'as')
 		self.setData('selection', options['varName'])
 		return True
 
 	# modules
 	def _run(self, args):
 		self.addSyntax('script')
-		options = self.parseArgs(args)
+		options = self.parseArgs(args, 'run')
 
 		with open(options['script'], 'r', encoding='utf8') as scriptFile:
 			script = scriptFile.read()
 			lines = self.parse(script)
-			self.lines[self.cmdLine:self.cmdLine] = lines
-
-		self.setData('selection', False)
-		self.setData('line', [])
-		if 'found' in self.data:
-			del self.data['found']
+			del self.lines[self.cmdLine-1]
+			self.lines[self.cmdLine-1:self.cmdLine-1] = lines
+			self.cmdLine -= 1
 
 	# file operations
 	def _empty(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_empty')['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, 'empty')['what']
 
 		if what:
 			io.open(what, 'w', encoding='utf8')
-			if self.verbose: print(' %s emptied out.' % what)
+			if self.verbose: self.log(' %s emptied out.' % what)
 		else:
 			self.setData('file', io.open(self.getData('filepath'), 'w', encoding='utf8'))
 			self.setData('filelen', 0)
-			if self.verbose: print(' %s emptied out.' % self.getData('filepath'))
+			if self.verbose: self.log(' %s emptied out.' % self.getData('filepath'))
 
 	def _save(self, args):
 		self.addSyntax('"as"', 'target')
@@ -178,12 +178,12 @@ class TSLEngine(TSLCore):
 		self._add(['[line]', 'to', target])
 
 		if self.verbose: 
-			print(' Saved %s as "%s".' % (self.getData('selection'), target))
+			self.log(' Saved %s as "%s".' % (self.getData('selection'), target))
 
 	def _write(self, args):
-		options = self.addSyntax('what').addDefaults({ 'what': 'found' }).parseArgs(args, '_write')
+		options = self.addSyntax('what').addDefaults({ 'what': 'found' }).parseArgs(args, 'write')
 		what = options['what']
-		ref = options.findRef(what)
+		ref = options.referenced.get('what', 'what')
 		if ref: 
 			return self._add(['[%s]' % ref])
 		return self._add([what])
@@ -224,9 +224,9 @@ class TSLEngine(TSLCore):
 				self.data['filelen'] += len(content)
 
 				if self.verbose:
-					print(' %s saved in "%s". ' % (self.getData('selection'), self.getData('filename')))
+					self.log(' %s saved in "%s". ' % (self.getData('selection'), self.getData('filename')))
 			except: 
-				print(' ! Could not write', self.getData('selection'), '!')
+				self.log(' ! Could not write', self.getData('selection'), '!')
 				pass
 
 	def _bash(self, args):
@@ -236,7 +236,7 @@ class TSLEngine(TSLCore):
 
 	# memory
 	def _be(self, args):
-		prop = self.addSyntax('property').parseArgs(args, '_be')['property']
+		prop = self.addSyntax('property').parseArgs(args, 'be')['property']
 		setattr(self, prop, True)
 
 	def _calculate(self, args):
@@ -248,12 +248,11 @@ class TSLEngine(TSLCore):
 
 	def _remember(self, args):
 		self.addSyntax('what')
-		self.addDefaults({ 'as': 'selection' })
 		self.addClauses('as')
 		options = self.parseArgs(args, 'remember')
 
 		if not options['as']:
-			options['as'] = options.referenced['what']
+			options['as'] = options.referenced.get('what', 'what')
 
 		self.setData(options['as'], options['what'])
 		self._as([options['as']])
@@ -261,11 +260,10 @@ class TSLEngine(TSLCore):
 	# traversal
 	def _find(self, args):
 		self.addSyntax('"all"', 'what')
+		self.addDefaults({'in': '[collection]'})
 		self.addClauses('in')
-		self.addDefaults({'in': self.getData('line')})
 
-		options = self.parseArgs(args, 'findAll')
-
+		options = self.parseArgs(args, 'find')
 		stringOrRegEx = self.parseVars(options['what'])
 
 		if stringOrRegEx in self.templates:
@@ -276,18 +274,12 @@ class TSLEngine(TSLCore):
 		if not isinstance(options['in'], list):
 			options['in'] = [options['in']]
 
-		if self.getData():
-			self.data['line'] = [self.getData()]
-		
 		isString = options['what'] in options.literals
 		
 		if not isString:
 			stringOrRegEx = r'' + str(stringOrRegEx)
 
-		self.data['found'] = []
-		self.data['group'] = []
-
-		for lineNr, line in enumerate(options['in']):
+		def checkMatch(line, lineNr):
 			matches = []
 			group = False
 
@@ -299,33 +291,39 @@ class TSLEngine(TSLCore):
 				group = re.match(stringOrRegEx, line, re.I)
 
 			if len(matches):
-				self.data['found'].append([lineNr, line, matches])
-
+				return matches
 			if group:
-				self.data['group'].append([lineNr, group.groupdict()])
+				return group.groupdict()
+			return False
 
-		if self.verbose: print(' found %s line(s) matching %s' % (len(self.getData('found')), query))
+		self.data['collection'].filter(checkMatch)
+
+		if self.verbose: self.log(' found %s element(s) matching %s' % (len(self.data['collection']), query))
 
 	def _select(self, args):
-		self.addSyntax('"from"', 'from')
-		self.addSyntax('"to"', 'to')
 		self.addSyntax('"words"')
 		self.addSyntax('which')
-		self.addClauses('until','to', 'of', 'as')
+		self.addSyntax('')
+		self.addClauses('until','to', 'from', 'of', 'as')
 		self.allowOrdinals('from','to','until','which')
-		self.addDefaults({'from':0, 'to':None, 'until':None, 'of':self.getData()})
+		self.allowCounts('which')
+		self.addDefaults({'from':0, 'to':None, 'until':None, 'of': '[collection]'})
 		options = self.parseArgs(args, 'select')
 
-		of = options.findRef(options['of']) or options['of']
+		of = options.referenced.get('of', options['of'])
 
 		if not 'as' in options and of:
 			options['as'] = of
 
 		if 'which' in options:
-			try: self.setData(options['as'], self.getData(of)[options['which']])
-			except: print(' ! %s has no index %s ! ' % (of, options['which']))
-		elif 'words' in options:
-			self.setData(re.split(r'\b', self.getData()))
+			if 'which' in options.counted:
+				options['to'] = options['from'] + options['which'] - 1
+			else:
+				options['from'] = options['which']
+				options['to'] = options['which']
+
+		if 'words' in options:
+			self.setData(re.split(r'\b', self.getData(of)))
 		else:
 			if 'from' in options:
 				if isinstance(options['from'], str):
@@ -338,25 +336,34 @@ class TSLEngine(TSLCore):
 				if isinstance(options['to'], str) and not options['to'] is None:
 					match = re.search(options['to'], self.getData(), re.I)
 
-					if match: 	options['to'] = match.span()[0]
+					if match: 	options['to'] = match.span()[0]-1
 					else: 		options['to'] = None
+				elif isinstance(options['to'], int):
+					options['to'] += 1
 
-			self.setData(options['as'], self.getData(of)[options['from']:options['to']])
+			if options['to'] > len(self.getData(of)):
+				options['to'] = None
+
+			try:
+				self.setData(options['as'], self.getData(of)[options['from']:options['to']])
+			except: 
+				if options['from'] == options['to']:
+					self.log(' ! %s has no index %s ! ' % (of, options['from']))
+				else:
+					self.log(' ! %s has no range %s to %s ! ' % (of, options['from'], options['to']))
 
 	def _take(self, args):
 		self.addSyntax('"lines|files|folders|results"')
-		self.addDefaults({'as':'[selection]', 'in': self.getData('cwd')})
+		self.addDefaults({'as':'collection', 'in': self.getData('cwd')})
 		self.addClauses('as', 'in')		
 
 		options = self.parseArgs(args, 'take')
-		varName = options.findRef(options['as']) or options['as']
+		varName = options['as']
 
-		if 'lines' in options:
-			if 'found' in self.data:
-				self.setData(varName, [found[1] for found in self.data['found']])
-			else:
-				self.setData(varName, self.data['line'])
-				self.setData('selection', varName)
+		if 'lines' in options:		
+			collection = self.data['collection']
+			collection.setTo(collection.getFiltered(collection.lines))
+			self.setData(varName, collection)
 
 		elif 'files' in options:
 			if '.' in os.path.split(options['in'])[-1]:
@@ -372,16 +379,7 @@ class TSLEngine(TSLCore):
 
 			self.setData(varName, foldersOnly)
 		elif 'results' in options:
-			collection = []
-
-			for found in self.data['found']:
-				if len(found[2]) > 1:
-					for item in found[2]:
-						collection.append(item)
-				elif len(found[2]):
-					collection.append(found[2][0])
-
-			self.setData(varName, collection)
+			self.setData(varName, self.getData('collection').applyResults())
 
 		if self.getData(varName) and len(self.getData(varName)) == 1:
 			self.setData(varName, self.getData(varName)[0])
@@ -410,7 +408,7 @@ class TSLEngine(TSLCore):
 
 		if isinstance(options['what'], list):
 			for i, item in enumerate(options['what']):
-				varName = options.findRef(options['what'])
+				varName = options.referenced.get('what', 'what')
 				self.data['i'] = i
 				self.data['j'] = i + 1
 				self.data['__' + varName] = item
@@ -419,25 +417,21 @@ class TSLEngine(TSLCore):
 				self.data[varName][i] = formula
 		else:
 			rendered = self.parseVars(options['formula'])
-			self.setData(options.findRef(options['what']), rendered)
+			self.setData(options.referenced.get('what', 'what'), rendered)
 
 	def _replace(self, args):
 		self.addSyntax('what', '"by"', 'by')
-		self.addDefaults({'in':self.getData('selection')})
+		self.addDefaults({'in':'[collection]'})
 		self.addClauses('in')
 		options = self.parseArgs(args, 'replace')
 
-		if not options['in']:
-			data = self.getData('line')
-			_in = 'line'
-		else:
-			data = options['in']
-			_in = options.findRef(data)
+		data = options['in']
+		_in = options.referenced.get(data, data)
 
-			if not _in:
-				_in = data
-				data = self.getData(data)
-				options['in'] = data
+		if not _in:
+			_in = data
+			data = self.getData(data)
+			options['in'] = data
 
 		if isinstance(data, list):
 			for i, entry in enumerate(data):
@@ -461,7 +455,7 @@ class TSLEngine(TSLCore):
 		options = self.parseArgs(args, 'split')
 
 		if not 'as' in options:
-			options['as'] = options.findRef(options['what'])
+			options['as'] = options.referenced.get('what', 'what')
 
 		if isinstance(options['what'], bytes):
 			options['what'] = str(options['what'], 'utf8')
@@ -482,7 +476,7 @@ class TSLEngine(TSLCore):
 			filesOnly = len(glob(os.path.join(options['in'], '*.*'), recursive=True))
 			self.setData(options['as'], foldersAndFiles - filesOnly)
 		elif 'what' in options:
-			self.setData(options['as'], len(self.getData(options['what'])))
+			self.setData(options['as'], len(options['what']))
 
 	def _combine(self, args):
 		self.addSyntax('x', '"with"', 'y')
@@ -494,7 +488,7 @@ class TSLEngine(TSLCore):
 
 	def _unique(self, args):
 		self.addSyntax('what')
-		self.addDefaults({'what':'line'})
+		self.addDefaults({'what':'[collection]'})
 		options = self.parseArgs(args, 'unique')
 
 		noDupes = []
@@ -506,20 +500,20 @@ class TSLEngine(TSLCore):
 		if len(noDupes) == 1:
 			noDupes = noDupes[0]
 	
-		self.setData(options.findRef(options['what']), noDupes)
+		self.setData(options.referenced.get('what', 'what'), noDupes)
 
 	def _sort(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_sort')['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, 'sort')['what']
 		
 		if what == 'lines':
-			self.getData('line').sort()
+			self.getData('collection').sort()
 		elif what:
 			what.sort()
 
 	def _reverse(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, '_reverse')['what']
+		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, 'reverse')['what']
 		if what == 'lines':
-			self.getData('line').reverse()
+			self.getData('collection').reverse()
 		return what.reverse()
 
 	def _remove(self, args):
@@ -527,26 +521,33 @@ class TSLEngine(TSLCore):
 		self.addSyntax('"empty"', '"lines|results|folders|files"')
 		what = self.parseArgs(args, 'remove')['what']
 
+		forRemoval = self.getData('collection').lineNrs.copy()
+
 		if what == 'lines':
-			lines = self.getData('line')
-			cleaned = []
+			def checkKeeping(entry, id):
+				if id not in forRemoval:
+					return entry
+				return False
 
-			foundLines = [found[0] for found in self.data['found']]
-
-			for lineNr, line in enumerate(lines):
-				if lineNr not in foundLines:
-					cleaned.append(line)
-
-			self.setData('line', cleaned)
+			collection = self.getData('collection').filter(checkKeeping).applyResults()
+			self.setData('collection', collection)
+		elif what == 'results':
+			###
+			pass
+		elif what == 'folders':
+			###
+			pass
+		elif what == 'files':
+			###
+			pass
 
 	#control flow
 	def _for(self, args):
-		options = self.addSyntax('"every"', 'collection').parseArgs(args, '_for')
-
+		options = self.addSyntax('"every"', 'collection').parseArgs(args, 'for')
 		varName = options['collection']
 
-		if isinstance(varName, list):
-			varName = options.findRef(varName)
+		if 'collection' in options.referenced:
+			varName = options.referenced.get('collection')
 		else:
 			varName = varName[1:-1]
 
@@ -572,12 +573,13 @@ class TSLEngine(TSLCore):
 
 			self.setData(varName, self.data['collection'][0])
 		else:
-			if self.verbose: print('', varName, 'empty, for loop not iterating!')
+			if self.verbose: self.log('', varName, 'empty, for loop not iterating!')
 
 			while self.cmdLine < len(self.lines) and self.lines[self.cmdLine] != '---':
 				self.cmdLine += 1
 
 	def _repeat(self, args=False):
+		self.parseArgs(args, 'repeat')
 		if len(self.scopes):
 
 			if not self.states[-1]:
@@ -601,6 +603,8 @@ class TSLEngine(TSLCore):
 					self.setData('selection', self.selections[-1])
 					self.setData('i', self.counters[-1])
 					self.setData('j', self.counters[-1] + 1)
+				else:
+					del self.data[self.data['selection']]
 			else:		
 				self.cmdLine = self.scopes[-1] - 1
 				self.setData(self.data['selection'], self.data['collection'][self.counters[-1]])
