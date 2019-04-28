@@ -204,7 +204,7 @@ You'll usually see this followed by a `take` or `find all` command*
     combine [vowels] with [consonants] as letters
 ```
 
-### find all *`<string | RegEx>`* [in `<varName>`]
+### find all *`<string | RegEx>`* [in `<varName>`] [as `<varName>`]
 *Finds all occurrences of a string or regular expression in the lines of the currently open file or a stored collection. The results of this search are automatically stored in a variable `found`*
 
 Example:
