@@ -12,9 +12,12 @@ from TSL.TSLEngine import TSLEngine
 class TslCompileCommand(sublime_plugin.WindowCommand):
 	panel = False
 
-	def log(self, message):
+	def log(self, message, newline='\n'):
+		if not newline:
+			newline = ''
+			
 		message = str(message)
-		sublime.set_timeout(lambda: self.panel.run_command('append', {'characters': message + '\n'}), 1)
+		sublime.set_timeout(lambda: self.panel.run_command('append', {'characters': message + newline}), 1)
 
 	def run(self):
 		win = sublime.active_window()

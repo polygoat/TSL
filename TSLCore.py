@@ -3,7 +3,7 @@ import os
 import re
 import hashlib
 import sys
-from glob import glob
+from .glob2 import glob
 from TSL.TSLHelpers import *
 
 class TSLCollection(list):
@@ -311,8 +311,11 @@ class TSLCore:
 		self.__logger = container
 		return self
 
-	def log(self, message):
-		self.__logger.log(message)
+	def findFiles(self, pattern):
+		pass
+
+	def log(self, message, newline='\n'):
+		self.__logger.log(message, newline)
 		return self
 
 	def registerPlugin(self, name, method):

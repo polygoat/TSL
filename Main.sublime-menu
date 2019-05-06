@@ -1,0 +1,19 @@
+[
+    {
+        "id": "tools",
+        "children":
+        [
+            {
+                "id": "tsl_menu",
+                "caption": "TSL",
+                "children":
+                [
+                    {
+                        "caption": "Simulate in Sublime",
+                        "command": "tsl_simulate"
+                    }
+                ]
+            }
+        ]
+    }
+]

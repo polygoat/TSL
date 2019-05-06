@@ -14,7 +14,7 @@ Once dropped in your Sublime Text's **package directory**, files with the extens
 # Index
 ### [How does it work?](#how-does-it-work)
 ### [Setup](#setup)
-### [Available Commands](#available-commands)
+### [Available TSL Commands](#available-tsl-commands)
 ### [Templating](#templating)
 ---
 # How does it work?
@@ -28,7 +28,7 @@ A command's inputs and outputs can be **strings** or **collections of strings**.
 drop the TSL folder into `%USERPROFILE%/AppData/Roaming/Sublime Text 3/Packages` to install the plugin.
 
 ---
-# Available Commands
+# Available TSL Commands
 
 ## File & system operations
 

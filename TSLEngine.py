@@ -6,7 +6,7 @@ import sys
 import json
 import math
 import subprocess
-from glob import glob
+from .glob2 import glob
 from TSL.TSLCore import TSLCore, TSLCollection
 
 # class TSLExpressions:
@@ -41,6 +41,7 @@ class TSLEngine(TSLCore):
 	collections = []
 	selections = []
 	states = []
+	looping = False
 	#expressions = TSLExpressions()
 
 	templates = {
@@ -69,13 +70,15 @@ class TSLEngine(TSLCore):
 					self.log(' %s: %s' % (whatReference, json.dumps(what, indent=4, sort_keys=True)))
 				except UnicodeEncodeError:
 					self.log(' ! %s could not be encoded for logging !' % whatReference) 
+				except:
+					self.log(' ' + whatReference + ': ', False)
+					self.log(what)
 			else:
-				self.log(' ' + what)
+				self.log(' ', False)
+				self.log(what)
 		elif len(what): 
-			#try:
-			self.log(' ' + what)
-			#except:
-			#	self.log(' ! {%s} could not be encoded for logging !' % self.lines[self.cmdLine-1]) 
+			self.log(' ', False)
+			self.log(what)
 		else:
 			self.log('')
 
@@ -123,19 +126,22 @@ class TSLEngine(TSLCore):
 			self.data['filelen'] = 0
 
 		try:
-			self.data['collection'] = TSLCollection(re.split(r'[\n\r]', self.data['filecontent']))
+			if len(self.data['filecontent']):
+				self.data['lines'] = TSLCollection(re.split(r'[\n\r]', self.data['filecontent']))
+			else:
+				self.data['lines'] = []
 
-			if len(self.data['collection']) == 1 and not len(self.data['collection'][0]):
-				self.data['collection'] = []
+			if len(self.data['lines']) == 1 and not len(self.data['lines'][0]):
+				self.data['lines'] = []
 				self.data['filelen'] = 0
 			else:
-				self.data['filelen'] = len(self.data['collection'])
+				self.data['filelen'] = len(self.data['lines'])
 
 		except:
-			self.data['collection'] = []
+			self.data['lines'] = []
 			self.data['filelen'] = 0
 
-		if self.verbose: self.log(' %s line(s) read.' % len(self.data['collection']))
+		if self.verbose: self.log(' %s line(s) read.' % len(self.data['lines']))
 
 	def _as(self, args):
 		options = self.addSyntax('varName').parseArgs(args, 'as')
@@ -252,7 +258,7 @@ class TSLEngine(TSLCore):
 		options = self.parseArgs(args, 'remember')
 
 		if not options['as']:
-			options['as'] = options.referenced.get('what', 'what')
+			options['as'] = options.referenced.get('what', 'selection')
 
 		self.setData(options['as'], options['what'])
 		self._as([options['as']])
@@ -304,13 +310,19 @@ class TSLEngine(TSLCore):
 		self.addSyntax('"words"')
 		self.addSyntax('which')
 		self.addSyntax('')
-		self.addClauses('until','to', 'from', 'of', 'as')
+		self.addClauses('from','to','after','until','of','as')
 		self.allowOrdinals('from','to','until','which')
 		self.allowCounts('which')
 		self.addDefaults({'from':0, 'to':None, 'until':None, 'of': '[collection]'})
 		options = self.parseArgs(args, 'select')
 
+		if options['until']:
+			options['to'] = options['until']
+
 		of = options.referenced.get('of', options['of'])
+
+		if len(of) == 1:
+			of = of[0]
 
 		if not 'as' in options and of:
 			options['as'] = of
@@ -325,18 +337,25 @@ class TSLEngine(TSLCore):
 		if 'words' in options:
 			self.setData(re.split(r'\b', self.getData(of)))
 		else:
+			if 'after' in options:
+				options['from'] = options['after']		
+
 			if 'from' in options:
 				if isinstance(options['from'], str):
 					match = re.search(options['from'], self.getData(), re.I)
+					matchLen = len(options['from'])
 					
 					if match: 	options['from'] = match.span()[0]
 					else: 		options['from'] = 0
+
+					if 'after' in options:
+						options['from'] += matchLen - 1
 
 			if 'to' in options:	
 				if isinstance(options['to'], str) and not options['to'] is None:
 					match = re.search(options['to'], self.getData(), re.I)
 
-					if match: 	options['to'] = match.span()[0]-1
+					if match: 	options['to'] = match.span()[0]
 					else: 		options['to'] = None
 				elif isinstance(options['to'], int):
 					options['to'] += 1
@@ -371,7 +390,8 @@ class TSLEngine(TSLCore):
 			else:
 				path = os.path.join(options['in'],'*.*')
 
-			self.setData(varName, glob(path, recursive=True))
+			#self.setData(varName, glob(path, recursive=True))
+			self.setData(varName, glob(path))
 		elif 'folders' in options:
 			foldersAndFiles = glob(os.path.join(options['in'], '*'), recursive=True)
 			filesOnly = glob(os.path.join(options['in'], '*.*'), recursive=True)
@@ -503,12 +523,19 @@ class TSLEngine(TSLCore):
 		self.setData(options.referenced.get('what', 'what'), noDupes)
 
 	def _sort(self, args):
-		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, 'sort')['what']
+		self.addSyntax('what')
+		self.addDefaults({'what':False})
+		self.addClauses('by')
+		options = self.parseArgs(args, 'sort')
+		what = options['what']
 		
 		if what == 'lines':
 			self.getData('collection').sort()
 		elif what:
-			what.sort()
+			if 'by' in options:
+				what.sort(key=options['by'])
+			else:
+				what.sort()
 
 	def _reverse(self, args):
 		what = self.addSyntax('what').addDefaults({'what':False}).parseArgs(args, 'reverse')['what']
@@ -562,6 +589,7 @@ class TSLEngine(TSLCore):
 			self.selections.append(varName)
 			self.counters.append(0)
 			self.states.append(True)
+			self.looping = True
 
 			collection = self.collections[-1]
 
@@ -574,6 +602,8 @@ class TSLEngine(TSLCore):
 			self.setData(varName, self.data['collection'][0])
 		else:
 			if self.verbose: self.log('', varName, 'empty, for loop not iterating!')
+
+			self.looping = False
 
 			while self.cmdLine < len(self.lines) and self.lines[self.cmdLine] != '---':
 				self.cmdLine += 1
@@ -605,9 +635,11 @@ class TSLEngine(TSLCore):
 					self.setData('j', self.counters[-1] + 1)
 				else:
 					del self.data[self.data['selection']]
+					self.looping = False
 			else:		
 				self.cmdLine = self.scopes[-1] - 1
 				self.setData(self.data['selection'], self.data['collection'][self.counters[-1]])
 		else:
+			self.looping = False
 			self.cmdLine += 1
 	
