@@ -81,5 +81,6 @@ contexts:
       scope: punctuation.definition.comment.tsl
 
   keywords:
-    - match: '\b(lines|files|folders|results|all|timecodes?|filenames?|extensions?)\s'
+    - match: '\b(line|file|folder|result|tab|period|dot|comma|(semi)?colon|space|timecode|filename|extension|paren|bracket|hyphen|underscore|line)s?|all\s'
+
       scope: string.quoted.double

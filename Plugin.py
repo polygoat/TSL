@@ -32,6 +32,7 @@ class TslCompileCommand(sublime_plugin.WindowCommand):
 		TSLRunner.setLogger(self)
 
 		if TSLRunner.task:
+			TSLRunner.data = {}
 			timeStart = time.time()
 			win.status_message('Running TSL script...')
 			TSLRunner.log('Running TSL script "%s"...\n' % filePath)

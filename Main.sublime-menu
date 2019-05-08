@@ -11,6 +11,13 @@
                     {
                         "caption": "Simulate in Sublime",
                         "command": "tsl_simulate"
+                    },
+                    {
+                        "caption": "View last build results",
+                        "command": "show_panel",
+                        "args": {
+                            "panel": "output.tsl"
+                        }
                     }
                 ]
             }

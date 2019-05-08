@@ -99,14 +99,14 @@ class TSLArgs(dict):
 			k = self.__clean(k)
 			v = self.__clean(v)
 			if len(v) > 20:
-				v = v[0:20] + '...' + v[-6:-1]
+				v = v[0:20] + '...' + v[-6:]
 
 			propList.append('%s=%s' % (k, v))
 
 		return delimiter.join(propList)
 
 	def __str__(self):
-		return '<TSLArguments.%s\n\t%s\n\tsyntax="%s"\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n\tcounted[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), ' '.join(self.matchedPattern), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '), ','.join(self.counted))
+		return '<TSLArguments.%s\n\t%s\n\tsyntax="%s"\n\treferenced[%s]\n\tliterals%s\n\tparsed[%s]\n\tcounted[%s]\n/>' % (self.method, self.__renderProps(self, '\n\t'), ' '.join(self.get('matchedPattern', [])), self.__renderProps(self.referenced, ' '), self.literals, self.__renderProps(self.parsed, ' '), ','.join(self.counted))
 
 class TSLCore:
 	__logger = {
@@ -143,6 +143,8 @@ class TSLCore:
 		'twelve': 12, 	'dozen': 12,
 		'all': -1
 	}
+
+	__plurals = {}
 
 	active = True
 	verbose = False
@@ -311,9 +313,6 @@ class TSLCore:
 		self.__logger = container
 		return self
 
-	def findFiles(self, pattern):
-		pass
-
 	def log(self, message, newline='\n'):
 		self.__logger.log(message, newline)
 		return self
@@ -340,10 +339,20 @@ class TSLCore:
 		return [dict[arg] for arg in args]
 
 	def toPlural(self, word):
-		return Inflector.plural(word)
+		plural = self.__plurals.get(word)
+		if not plural:
+			plural = Inflector.plural(word)
+			self.__plurals[word] = plural
+		return plural
 
 	def fromPlural(self, word):
-		return Inflector.singular(word)
+		if word in self.__plurals:
+			__singulars = {value: key for key, value in self.__plurals.items()}
+			singular = __singulars[word]
+		else:
+			singular = Inflector.singular(word)
+			self.__plurals[singular] = word
+		return singular
 
 	def parseVars(self, toParse):
 		results = toParse + r''
@@ -357,20 +366,22 @@ class TSLCore:
 
 		return results
 
-	def getData(self, name=False):
+	def getData(self, name=False, fallback='[%s]'):
 		if name and isinstance(name, str): 
 			if name in self.data:
 				return self.data[name]
+			elif isinstance(fallback, str):
+				return fallback % name
 			else:
-				return '[%s]' % name
+				return fallback
 
 		selection = self.data['selection']
 
 		if selection:
 			if selection in self.data:
 				return self.data[selection]
-			elif 'line' in self.data:
-				return self.data['line']
+			elif 'lines' in self.data:
+				return self.data['lines']
 		return False
 
 	def setData(self, name, value=None):
@@ -378,6 +389,21 @@ class TSLCore:
 			value = name
 			name = self.data['selection']
 		self.data[name] = value
+
+	def resolveAsClause(self, varName, value):
+		self.setData(varName, value)
+		#self.setData('selection', varName)
+		if self.looping:
+			if varName != 'selection':
+				plural = self.toPlural(varName)
+				if plural != varName:
+					collection = self.getData(plural, fallback=False)
+
+					if collection:
+						collection.append(value)
+					else:
+						collection = [value]
+					self.setData(plural, collection)
 
 	@tail_recursive
 	def runLine(self, cmdLine):
@@ -421,7 +447,11 @@ class TSLCore:
 		self.allowedCounts.extend(labels)
 
 	def parseArgs(self, args, debug=False):
-		# set defó values
+		for arg, token in self.defaults.items():
+			if self.__isReference(token):
+				self.defaults[arg] = self.getData(token[1:-1])
+
+		# set default values first
 		parsedArgs = TSLArgs(args, self.defaults, debug)
 
 		args = self.__normalizeLiterals(args)		
@@ -466,13 +496,12 @@ class TSLCore:
 					else:
 						args[i] = self.__resolveOrdinals(token, args[i], parsedArgs)
 						args[i] = self.__resolveCounts(token, args[i], parsedArgs)
-
+						
 						if isinstance(args[i], int):
 							parsedArgs[token] = args[i]
 						elif self.__isReference(token):
 							parsedArgs[token] = self.getData(args[i])
 							parsedArgs.referenced[token] = args[i]
-							parsedArgs.referenced['___' + token] = args[i]
 
 					parsedArgs[token] = args[i]
 				elif '|' in token:
