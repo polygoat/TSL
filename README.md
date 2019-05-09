@@ -21,7 +21,25 @@ Once dropped in your Sublime Text's **package directory**, files with the extens
 TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line starts with a command followed by a space and space-separated arguments. 
 Most commands support optional clauses like `as ...` (storage variable) or `in ...` (file handle) to supply further information.
 
+## Datatypes
 A command's inputs and outputs can be **strings** or **collections of strings**. In ladder case, TSL iterates over a collection's strings and applies the command to each of them. The commands `as`, `remember`, `split`, and `for every` loops change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context. To reference variables rather than strings use square brackets. `log something` will log the string "something", while `log [something]` will log the content of the variable called _something_.
+
+## Loops
+When working inside `for every` loops, TSL automagically uses a **singular version** of your variable to step through the entries of your collection.
+
+Example:
+```fortran
+in /contacts/childnames.txt
+    take lines as children
+    log [children]
+    for every [child]
+        split by tab
+        select 2nd as first-name
+    ---
+    log [first-names]
+```
+
+Variables created during loops will automatically be appended to a collection named using the plural form. In the example above, the creation of `first-name` **automatically populates** a collection called `first-names`. Irregular plurals like child -> children or foot -> feet have basic support. If the plural fails try compound words for better inflection.
 
 ---
 # Setup
@@ -305,7 +323,8 @@ Templates are enclosed in square brackets and can appear in quoted strings, file
     in user.txt
         find all \b[domain][^:]: as users
         for every [user]
-            select from 0 to -1
+            # omit first one (admin)
+            select from 2nd
             in "/users/[user]/credentials.txt"
                 change [user] to "[user]:pleaseresetme"
                 add [user]
