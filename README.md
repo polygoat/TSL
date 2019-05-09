@@ -253,11 +253,11 @@ Example:
 *Sorts either the supplied collection by the alphanumerical ascending order of reference collection.*
 
 ### split *`<string|RegEx>`* by `<delimiter>` as `<variable>`
-Splits a string into a collection using delimiter.
+Splits a string into a collection using delimiter. The delimiter can be any combination of characters or one of the following keywords: brackets, commas, dots, hyphens, lines, parens, periods, semicolons, spaces, tabs, underscores.
 
 **Example:**
 ```fortran
-    split apples;bananas;oranges by ; as fruits
+    split apples;bananas;oranges by semicolons as fruits
     log [fruits]
 ```
 
