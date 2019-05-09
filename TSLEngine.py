@@ -597,10 +597,12 @@ class TSLEngine(TSLCore):
 			collection = self.getData('collection').filter(checkKeeping).applyResults()
 			self.setData('collection', collection)
 		elif 'folders' in options:
-			### find empty folders
-			folders = glob('*', recursive=True)
-			#os.rmdir()
-			pass
+			filesAndFolders = glob('*', recursive=True)
+			for item in filesAndFolders:
+				if os.path.isdir(item):
+					try:	os.rmdir(item)
+					except: pass
+
 		elif 'files' in options:
 			files = glob('**/*', recursive=True)
 			emptyFiles = list(filter(lambda file: not os.stat(file).st_size, files))

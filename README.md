@@ -319,15 +319,19 @@ The external TSL file will receive the same scope as inlined code.
 Templates are enclosed in square brackets and can appear in quoted strings, file paths, and even within regular expressions:
 ```fortran
 {
-    remember "\CommNetwork" as domain
-    in user.txt
-        find all \b[domain][^:]: as users
-        for every [user]
-            # omit first one (admin)
-            select from 2nd
-            in "/users/[user]/credentials.txt"
-                change [user] to "[user]:pleaseresetme"
-                add [user]
+    in stats/milestones.tsv
+        take lines as rows
+
+        for every [row]
+            split by tabs as column
+            select second as team-name
+            select 3rd as task
+
+            find all [team-name]\:(.*) in [task]
+            take results
+
+            in "stats/[team-name].txt"
+                write [task]
         ---
 }
 ```
