@@ -540,7 +540,7 @@ class TSLCore:
 		isTask = re.findall(r'\{\n\s*([\w\W]+)\s*\n\}', task)
 
 		if len(isTask):
-			return re.split(r'\s*[\n\r]\s*|\s*and\s*', isTask[0])
+			return re.split(r'\s*[\n\r]\s*', isTask[0])
 
 		self.log(' ! No viable task found !')
 		return False

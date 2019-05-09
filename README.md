@@ -230,6 +230,10 @@ Example:
 
 *Sorts either the supplied or last referenced collection alphanumerically (in ascending order).*
 
+### sort [`<varName>`] by [`<reference>`]
+
+*Sorts either the supplied collection by the alphanumerical ascending order of reference collection.*
+
 ### split *`<string|RegEx>`* by `<delimiter>` as `<variable>`
 Splits a string into a collection using delimiter.
 
@@ -238,6 +242,9 @@ Splits a string into a collection using delimiter.
     split apples;bananas;oranges by ; as fruits
     log [fruits]
 ```
+
+### unique [`<varName>`]
+*Removes all duplicate entries from given collection.*
 
 ### unique lines
 *Removes all duplicate lines from the last referenced collection.*
@@ -268,9 +275,9 @@ Splits a string into a collection using delimiter.
 ### for every `<variable>`
 ### ---
 
-*Loops through a collection, populating the variable `i` with the current index. From within the loop, the item of the collection can be accessed using the variable name in singular (books -> book, babies -> baby).*
+*Loops through a collection, populating the variable `i` with the current index. Use the singular form here to loop through a collection (books -> book, babies -> baby).*
 
-*If a collection is empty, the for-loop is skipped. This becomes useful to create conditional flows.*
+*If a collection is empty, the for-loop is skipped. This is useful to create conditional flows.*
 
 *Always terminate a loop with three consecutive hyphens in a separte line.*
 
@@ -296,7 +303,7 @@ Templates are enclosed in square brackets and can appear in quoted strings, file
 {
     remember "\CommNetwork" as domain
     in user.txt
-        find all \b[domain][^:]: as user
+        find all \b[domain][^:]: as users
         for every [user]
             select from 0 to -1
             in "/users/[user]/credentials.txt"

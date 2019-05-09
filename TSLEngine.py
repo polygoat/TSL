@@ -371,7 +371,10 @@ class TSLEngine(TSLCore):
 				options['to'] = None
 
 			try:
-				self.resolveAsClause(options['as'], self.getData(of)[options['from']:options['to']])
+				data = self.getData(of)[options['from']:options['to']]
+				if len(data) == 1:
+					data = data[0]
+				self.resolveAsClause(options['as'], data)
 			except: 
 				if options['from'] == options['to']:
 					self.log(' ! %s has no index %s ! ' % (of, options['from']))
@@ -580,8 +583,9 @@ class TSLEngine(TSLCore):
 
 	def _remove(self, args):
 		self.addSyntax('what')
-		self.addSyntax('"empty"', '"lines|results|folders|files"')
-		what = self.parseArgs(args, 'remove')['what']
+		self.addSyntax('"empty"', '"folders|files"')
+		options = self.parseArgs(args, 'remove')
+		what = options.get('what', '')
 
 		forRemoval = self.getData('collection').lineNrs.copy()
 
@@ -590,18 +594,19 @@ class TSLEngine(TSLCore):
 				if id not in forRemoval:
 					return entry
 				return False
-
 			collection = self.getData('collection').filter(checkKeeping).applyResults()
 			self.setData('collection', collection)
-		elif what == 'results':
-			###
+		elif 'folders' in options:
+			### find empty folders
+			folders = glob('*', recursive=True)
+			#os.rmdir()
 			pass
-		elif what == 'folders':
-			###
-			pass
-		elif what == 'files':
-			###
-			pass
+		elif 'files' in options:
+			files = glob('**/*', recursive=True)
+			emptyFiles = list(filter(lambda file: not os.stat(file).st_size, files))
+			
+			for file in emptyFiles:
+				os.remove(file)
 
 	#control flow
 	def _for(self, args):
