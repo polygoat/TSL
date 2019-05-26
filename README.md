@@ -39,7 +39,7 @@ in /contacts/childnames.txt
     log [first-names]
 ```
 
-Variables created during loops will automatically be appended to a collection named using the plural form. In the example above, the creation of `first-name` **automatically populates** a collection called `first-names`. Irregular plurals like child -> children or foot -> feet have basic support. If the plural fails try compound words for better inflection.
+Variables created during loops will automatically be appended to a collection named using the plural form. In the example above, the creation of `first-name` **automatically populates** a collection called `first-names`. Irregular plurals like child -> children or foot -> feet have basic support. If the plural fails try compound words for better inflection, e.g. `species-collection` instead of `species`.
 
 ---
 # Setup
@@ -114,7 +114,7 @@ You'll usually see this followed by a `take` or `find all` command*
 ---
 ## Selections
 
-### select nth [of `[input]`]
+### select <n>th [of `[input]`]
 *Selects a specific item of a collection, given its index.*
 
 **Example:**
@@ -222,7 +222,7 @@ You'll usually see this followed by a `take` or `find all` command*
     combine [vowels] with [consonants] as letters
 ```
 
-### find all *`<string | RegEx>`* [in `<varName>`] [as `<varName>`]
+### find *`<string | RegEx>`* [in `<varName>`] [as `<varName>`]
 *Finds all occurrences of a string or regular expression in the lines of the currently open file or a stored collection. The results of this search are automatically stored in a variable `found`*
 
 Example:

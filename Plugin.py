@@ -6,8 +6,8 @@ import io
 import gc
 import re
 import time
-from TSL.TSLCore import TSLArgs
-from TSL.TSLEngine import TSLEngine
+from TSL.TSLEngine import *
+from TSL.TSLCore import *
 
 class TslCompileCommand(sublime_plugin.WindowCommand):
 	panel = False
@@ -22,9 +22,15 @@ class TslCompileCommand(sublime_plugin.WindowCommand):
 	def run(self):
 		win = sublime.active_window()
 		view = win.active_view()
+		inlined = False
 		vars = win.extract_variables()
 		self.panel = win.create_output_panel('tsl', False)
-		filePath = vars['file']
+
+		if 'file' in vars:
+			filePath = vars['file']
+		else:
+			inlined = True
+			filePath = view.substr(sublime.Region(0, view.size()))
 
 		win.run_command('show_panel', {"panel": "output.tsl"})
 
@@ -35,8 +41,10 @@ class TslCompileCommand(sublime_plugin.WindowCommand):
 			TSLRunner.data = {}
 			timeStart = time.time()
 			win.status_message('Running TSL script...')
-			TSLRunner.log('Running TSL script "%s"...\n' % filePath)
-			os.chdir(vars['file_path'])
+			TSLRunner.log('Running TSL script "%s"...\n' % ('inline' if inlined else filePath))
+			
+			if 'file_path' in vars:
+				os.chdir(vars['file_path'])
 
 			try:
 				TSLRunner.run()
@@ -47,9 +55,9 @@ class TslCompileCommand(sublime_plugin.WindowCommand):
 				errorMsg = sys.exc_info()[1]
 				errorLine = TSLRunner.cmdLine
 
-				TSLRunner.log(' ! %s in line %d: %s ! ' % (errorType, errorLine, errorMsg))
-				TSLRunner.log(' ! in: \t' + TSLRunner.lines[TSLRunner.cmdLine-1] + ' !')
-				TSLRunner.log('\n' + '_' * 100)
+				TSLRunner.log(' ! %s in line %d: %s' % (errorType, errorLine, errorMsg))
+				TSLRunner.log(' ! in command: \t' + TSLRunner.lines[TSLRunner.cmdLine-1])
+				TSLRunner.log('_' * 100)
 				TSLRunner.log('[Build aborted.]')
 				raise
 

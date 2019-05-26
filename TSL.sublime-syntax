@@ -21,6 +21,7 @@ contexts:
     - include: directives
     - include: numbers
     - include: ordinals
+    - include: quantifiers
     - include: counts
     - include: strings
     - include: templates
@@ -29,7 +30,7 @@ contexts:
     - include: keywords
 
   directives:
-    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find all|for every|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\s'
+    - match: '---|\b(bash|be|calculate|change|combine|count|empty|extract|find|for|log|remember|remove|replace|reverse|run|save|select|sort|split|take|unique|write)\s'
       scope: entity.name.function.tsl
 
   numbers:
@@ -38,6 +39,10 @@ contexts:
 
   ordinals:
     - match: '(\s+|\b|^)((but-la|fir|la)st|(2|seco)nd|(3|thi)rd|(\d+|four|fif|six|seven|eig|nine|ten)th|last)(\s+|$)'
+      scope:  string.quoted.double.tsl
+
+  quantifiers:
+    - match: '(\s+|\b|^)(every|all|other|odd|even|none)(\s+|$)'
       scope:  string.quoted.double.tsl
 
   counts:
