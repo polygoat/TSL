@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>TSL Syntax Highlighting</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/theme/paraiso-dark.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/theme/colorforth.min.css">
+</head>
+<body>
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+		}
+		textarea {
+			display: inline-block;
+			width: 100%;
+			height: 100vh;
+		}
+		.CodeMirror {
+			height: 100vh;
+		}
+		#test {
+			border: 1px dotted orange;
+			width: 100%;
+			position: absolute;
+			z-index: 9999;
+		}
+	</style>
+	<textarea>{
+	in concepts.tsl
+		find all viv\.(.+)
+		take results as concepts
+		select 2nd of concepts
+	
+	for every other [concept]
+		select from 2 to fourth as concept-spaces
+	---
+
+	log [concept-spaces]
+}</textarea>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/addon/mode/simple.min.js"></script>
+	<script src="codemirror.syntax.js"></script>
+	<script>
+		function parseURLParams(url) {
+		    var queryStart = url.indexOf("?") + 1,
+		        queryEnd   = url.indexOf("#") + 1 || url.length + 1,
+		        query = url.slice(queryStart, queryEnd - 1),
+		        pairs = query.replace(/\+/g, " ").split("&"),
+		        parms = {}, i, n, v, nv;
+
+		    if (query === url || query === "") return;
+
+		    for (i = 0; i < pairs.length; i++) {
+		        nv = pairs[i].split("=", 2);
+		        n = decodeURIComponent(nv[0]);
+		        v = decodeURIComponent(nv[1]);
+
+		        if (!parms.hasOwnProperty(n)) parms[n] = [];
+		        parms[n].push(nv.length === 2 ? v : null);
+		    }
+		    return parms;
+		}
+
+		var id = 0;
+		var params = parseURLParams(location.search);
+		var element = document.getElementsByTagName('textarea')[0];
+		var codeMirror = CodeMirror.fromTextArea(element, {
+			lineNumbers: 	true,
+    		mode: 			'tsl',
+    		//theme: 			'colorforth'
+    		theme: 			'paraiso-dark'
+		});
+
+		if(params) {
+			codeMirror.setValue(params.code[0]);
+			id = params.id[0];
+		} 
+		function updateHeight(event) {
+			window.parent.postMessage({ id, height: event.doc.height + 8 });
+		}
+		codeMirror.on('change', updateHeight);
+		updateHeight(codeMirror);
+	</script>
+</body>
+</html>
