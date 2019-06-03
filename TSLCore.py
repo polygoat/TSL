@@ -6,11 +6,12 @@ import sys
 from .glob2 import glob
 from TSL.TSLHelpers import *
 
-class TSLCore:
-	__logger = {
-		'log': print
-	}
+class TSLLogger:
+	def log(self, whatever, ignore=''):
+		return print(whatever)
 
+class TSLCore:
+	__logger = TSLLogger()
 	__plurals = {}
 
 	active = True
@@ -30,6 +31,7 @@ class TSLCore:
 		TSLData.reset()
 
 		if taskFilePath:
+			taskFilePath = taskFilePath.strip()
 			if taskFilePath.endswith('.tsl'):
 				self.fileName = taskFilePath
 				with io.open(taskFilePath, 'r', encoding='utf8') as taskFile:
@@ -39,7 +41,7 @@ class TSLCore:
 			elif taskFilePath.startswith('{') and taskFilePath.endswith('}'):
 				self.task = taskFilePath
 			else:
-				self.log('! This is not a valid task file.')
+				self.log('! %s is not a valid task file.' % taskFilePath)
 	
 	def __isRaw(self, anyString):
 		return anyString.startswith('/') and anyString.endswith('/')
@@ -104,7 +106,7 @@ class TSLCore:
 
 		command = re.findall(r'(?:\".*?[^\\\\]\"|\S)+', command)
 
-		if not command[0].startswith('#') and len(command):
+		if len(command) and not command[0].startswith('#'):
 			if command[0][0:3] == '---':
 				command[0] = 'repeat'
 
@@ -116,15 +118,13 @@ class TSLCore:
 	def executeCommand(self, command):
 		if hasattr(self, '_' + command[0]):
 				eval('self._' + command[0])(command[1:])
-		elif hasattr(self.expressions, '_' + command[0]):
-			self.log('Expression found!', command[0], command[1:])
 		elif command[0] in self.plugins:
 			self.plugins[command[0]](command[1:])
 		else:
-			self.log(' !', command[0], 'is no valid command !')
+			self.log(' !' + command[0] + ' is no valid command !')
 
 	def parse(self, task):
-		isTask = re.findall(r'\{\n\s*([\w\W]+)\s*\n\}', task)
+		isTask = re.findall(r'\{[\n\s]*([\w\W]+)[\n\s]*\}', task)
 
 		if len(isTask):
 			return re.split(r'\s*[\n\r]\s*', isTask[0])

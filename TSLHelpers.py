@@ -72,6 +72,10 @@ class TSLUtils:
 
 		return results
 
+	@staticmethod
+	def isFile(path):
+		return re.match(r'[\.a-zA-Z_0-9/\\:]+[^/]$', path)
+
 class TSLData(dict):
 	__data = {}
 
@@ -175,7 +179,6 @@ class TSLCollection(list):
 			createResults(element, id)
 		return self
 
-
 class TSLQuantifiers:
 	arguments = []
 	collection = None
@@ -225,7 +228,7 @@ class TSLQuantifiers:
 	@staticmethod
 	def _every(selector='all', collection=[]):
 		try:
-			args = [int(selector)]
+			args = [[int(selector)]]
 			method = TSLQuantifiers._nth
 		except: 
 			args = []
@@ -233,7 +236,6 @@ class TSLQuantifiers:
 				method = getattr(TSLQuantifiers, '_' + selector)
 
 		TSLQuantifiers.collection = collection.filter(method, *args)
-		#collection = [item for index, item in enumerate(collection) if method(item, index, *args)]
 		return collection
 
 class TSLSyntax(list):
@@ -334,6 +336,8 @@ class TSLArg:
 		return True
 
 	def parseString(self, value):
+		if self.isLiteral(value):
+			return self.parseLiteral(value)
 		return value
 
 	def isAny(self, value):
@@ -534,7 +538,7 @@ class TSLArgs(dict):
 			if isinstance(syntax[syntax.match], TSLArg) and syntax[syntax.match].datatype == 'remainder':
 				if syntax.size == 1 or hasPrevArg:
 					value = syntax[syntax.match].value
-				
+
 				if value is None:	value = arg
 				else:				value.insert(0, arg)
 
@@ -578,6 +582,8 @@ class TSLArgs(dict):
 						quantifiers = args[index+1:index-1:-1]
 						del args[index+1]
 						self.__argCount -= 1
+					elif prevArg in TSLArg.ordinals:
+						quantifiers = ['nth',TSLArg.ordinals[prevArg]]
 
 				del args[index]
 				index -=2
@@ -605,6 +611,20 @@ class TSLArgs(dict):
 					isClause = True
 					index -= 1
 					self.__argCount -= 2
+				elif prevArg in TSLArgs.quantifiers:
+					isClause = True
+
+					if arg in TSLArg.ordinals:
+						quantifiers = [prevArg, TSLArg.ordinals[arg]]
+						del args[index]
+						self.__argCount -= 1
+					else:
+						quantifiers = [prevArg]
+
+					self.quantifiers[args[index]] = quantifiers
+
+					hasPrevArg = index < self.__argCount-1
+					arg = args[index]
 
 			if not isClause:
 				self.matchSyntax(arg, hasPrevArg)
@@ -762,72 +782,5 @@ class TSLInflector:
 
 		return word + 's'
 
-TSLArgs.quantifiers = [Q[1:] for Q in dir(TSLQuantifiers) if Q[0] == '_' and Q[1] != '_']
+TSLArgs.quantifiers = [str(Q[1:]) for Q in dir(TSLQuantifiers) if Q[0] == '_' and Q[1] != '_']
 TSLData = TSLData()
-
-
-# -------------------------------------------------------
-# Debugging crap
-# -------------------------------------------------------
-#args = ['every', 'other']
-#args = ['every', 'even']
-#args = ['every', 3]
-#args = ['odd']
-#args = ['all']
-#args = ['none']
-
-#C = TSLCollection(['a', 'b', 'c', 'd', 'e', 'f'])
-#Q = TSLQuantifiers(C)
-
-#command = args[0]
-
-#if command in methods:
-#	args = Q.resolve(args)
-# 	print('args', args)
-#
-#else:
-#	print('method doesn\'t exist.')
-
-#tester = TSLArgs('select')
-#tester.supportSyntax(TSLArg('what', ['lines', 'folders', 'files']))
-#tester.supportSyntax(TSLArg('which', 'ordinal'))
-#tester.supportSyntax('something', TSLArg('etc', ...))
-#tester.supportSyntax(TSLArg('count', 'count'))
-#tester.supportSyntax(TSLArg('one', 'reference'), 'by', TSLArg('two', 'reference'))
-#tester.supportSyntax(TSLArg('nr', 'count'), 'from', TSLArg('two', 'reference'))
-#tester.allowClauses('as', TSLArg('to', 'float', 'reference'))
-#tester.allowClauses(TSLArg('of', 'reference'))
-#tester.setDefaults({ 'of':'[hui]', 'bloo': 'woo' })
-#args = ['something',  'strange', 'is', 'happening...']
-
-#args = ['[hui]', 'by', '[y]']
-
-#TSLData['hui'] = 'pfui'
-#print(tester.parseArgs(args))
-
-ary = ['find', 'every', 'other']
-#ary = ['every', 'other']
-#ary = ['all']
-
-ary.reverse()
-argCount = len(ary)
-
-i = 0
-prevArg = ary[i]
-if argCount > i+1:
-	prevPrevArg = ary[i+1]
-else:
-	prevPrevArg = False
-
-#while prevArg in TSLArgs.quantifiers:
-#	hasPrevArg = i < argCount-1
-#
-#	if hasPrevArg:
-#		prevArg = ary[i+1]
-#	else:
-#		prevArg = False
-#	i += 1
-
-#quantifiers = ary[:i][::-1]
-
-#print(prevPrevArg, prevArg)

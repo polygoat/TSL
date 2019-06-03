@@ -138,9 +138,9 @@ You'll usually see this followed by a `take` or `find all` command*
 
 **Example:**
 ```fortran
-    select from "accessibilityApp" to "[v:"
+    select from "{" to "}"
     select from \s to \s
-    select from 1 to "[v:samsung.tvSearchAndPlay.Genres:drama]"
+    select from 1 to ";"
     select two of [bigrams]
 ```
 

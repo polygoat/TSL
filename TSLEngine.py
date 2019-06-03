@@ -27,7 +27,6 @@ class TSLEngine(TSLCore):
 		options = TSLArgs('log')
 		options.supportSyntax(TSLArg('what', ...))
 		options.parseArgs(args)
-
 		what = options['what']
 
 		if isinstance(what, str):
@@ -465,6 +464,8 @@ class TSLEngine(TSLCore):
 			"semicolon": ";",
 			"hyphen": r'\-',
 			"underscore": "_",
+			"letter": r'([^\b]?)',
+			"character": r'([^\b]?)',
 			"period": r'\.',
 			"space": r'\s+',
 			"dot": r'\.',
@@ -498,6 +499,7 @@ class TSLEngine(TSLCore):
 	def _count(self, args):
 		options = TSLArgs('count')
 		options.supportSyntax(TSLArg('what', 'reference'))
+		options.supportSyntax(TSLArg('token', 'string'))
 		options.supportSyntax(TSLArg('which', ['files', 'folders']))
 		options.allowClauses(TSLArg('as'), TSLArg('in'))
 		options.setDefaults({'in':TSLData['cwd']})
@@ -505,6 +507,14 @@ class TSLEngine(TSLCore):
 
 		if 'what' in options:
 			self.resolveAsClause(options['as'], len(options['what']))
+		elif 'token' in options:
+			if TSLUtils.isFile(options['in']):
+				with open(options['in'], 'r') as file:
+					content = file.read()
+					content = re.sub(options['token'], '⛿', content)
+					fileLen = len(content)
+					self.resolveAsClause(options['as'], fileLen - len(content.replace('⛿', '')))
+					
 		elif options['which'] == 'files':
 			self.resolveAsClause(options['as'], len(glob(os.path.join(options['in'], '*.*'), recursive=True)))
 		elif options['which'] == 'folders':
