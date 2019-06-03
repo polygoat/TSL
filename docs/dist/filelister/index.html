@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>TSL filelist</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.5.3/css/foundation.min.css">
+	<style>		
+		html {
+			height: 100%;
+			width: 100%;
+		}
+		.list-group {
+		  	margin-bottom: 1rem;
+		  	margin-left: 0;
+		  	border-radius: 0;
+		  	background: #fefefe;
+		  	box-shadow: none;
+		  	overflow: hidden;
+		  	color: #0a0a0a;
+		}
+
+		.list-group > :last-child {
+		  	margin-bottom: 0;
+		}
+
+		.list-group-item {
+			font-size: 10pt;
+	  		padding: .5rem 1rem;
+	  		border-bottom: 1px solid #e6e6e6;
+		}
+
+		.list-group-item > :last-child {
+		  margin-bottom: 0;
+		  border-bottom: none;
+		}
+
+		.list-group-item.active {
+		  color: #fefefe;
+		  background-color: #1779ba;
+		  border-color: 1px solid #1779ba;
+		}
+
+		.list-group-item:hover, .list-group-item:focus {
+		  background-color: #e6e6e6;
+		}
+
+		.list-group-item:hover.active, .list-group-item:focus.active {
+		  background-color: #1779ba;
+		}
+
+		.list-group-item.disabled, .list-group-item.disabled:hover, .list-group-item.disabled:focus, .list-group-item[disabled], .list-group-item[disabled]:hover, .list-group-item[disabled]:focus {
+		  color: #8a8a8a;
+		  cursor: not-allowed;
+		  background-color: #fefefe;
+		}
+	</style>
+</head>
+<body>
+	<ul id="filelist" class="list-group">
+		<li class="list-group-item">loading...</li>
+	</ul>
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.5.3/js/foundation.min.js"></script>
+	<script src="../lib/params.js"></script>
+	<script>
+		jQuery(function($){
+			if($_GET) {
+				var $files = $('#filelist');
+				var dir = $_GET.dir[0].trim().split(/[\n\r]/g);
+				var files = $.map(dir, function(fileOrFolder) {
+					var isFolder = fileOrFolder.slice(-1) == '/';
+					var fClass = 'file';
+
+					if(isFolder) {
+						fileOrFolder = fileOrFolder.slice(0,-1);
+						fClass = 'folder';
+					}
+					return `<li class="list-group-item ${fClass}"><pre>${fileOrFolder}</pre></li>`;
+				});
+
+				$files.empty().html(files);
+			}
+		});
+	</script>
+</body>
+</html>

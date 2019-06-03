@@ -1,0 +1,44 @@
+		</div>
+	</div>
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.5.3/js/foundation.min.js"></script>
+	<script>
+		const debounce = (func, delay) => {
+		  let inDebounce;
+		  return function() {
+		    const context = this;
+		    const args = arguments;
+		    clearTimeout(inDebounce);
+		    inDebounce = setTimeout(() => func.apply(context, args), delay);
+		  }
+		}
+
+		const reloadCode = debounce(function (params, $iframe) {
+			var $sibling = $iframe.parentsUntil('pre').parent().next('pre');
+			if($sibling.length) {
+				var label = $sibling.find('label span').text().toLowerCase();
+				if(label === 'output') {
+					jQuery.get('http://localhost:8080', { code: params.code }, function(data) {
+						var $output = $sibling.find('iframe');
+						$output.attr('src', 'codemirror/index.html?id=' + $output[0].id + '&lang=plain&code=' + encodeURIComponent($.trim(data)));
+					});
+				}
+			}
+		}, 800);
+
+		jQuery(function($){
+			$(window)
+				.on('message', function(event, data){
+					var params = event.originalEvent.data;
+					var $iframe = $('#' + params.id);
+					$iframe.height(params.height);
+					reloadCode(params, $iframe);
+				});
+			$('.split-screen').children().addClass('cell large-auto');
+		});
+	</script>
+	<script>
+		document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>');
+	</script>
+</body>
+</html>

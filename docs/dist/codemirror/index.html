@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>TSL Syntax Highlighting</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/theme/paraiso-dark.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/theme/colorforth.min.css">
+</head>
+<body>
+	<style>
+		html, body {
+			background-color: #333;
+			color: #ddd;
+			margin: 0;
+			padding: 0;
+		}
+		textarea {
+			background-color: #333;
+			color: #ddd;
+			display: inline-block;
+			width: 100%;
+			height: 100vh;
+		}
+		.CodeMirror {
+			height: 100vh;
+			font-size: 12pt;
+		}
+	</style>
+	<textarea>{
+	loading...
+}</textarea>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/codemirror.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.47.0/addon/mode/simple.min.js"></script>
+	<script src="codemirror.syntax.js"></script>
+	<script src="../lib/params.js"></script>
+	<script>
+		var id = 0;
+		var element = document.getElementsByTagName('textarea')[0];
+		var codeMirror = CodeMirror.fromTextArea(element, {
+			lineNumbers: 	true,
+			lineWrapping: 	true,
+    		mode: 			$_GET.lang[0] || 'tsl',
+    		//theme: 			'colorforth'
+    		theme: 			'paraiso-dark'
+		});
+
+		if($_GET) {
+			codeMirror.setValue($_GET.code[0].replace(/\n$/g, ''));
+			id = $_GET.id[0];
+		} 
+		function updateHeight(event) {
+			window.parent.postMessage({ id, height: event.doc.height + 8, code: codeMirror.getValue() });
+		}
+		codeMirror.on('change', updateHeight);
+		updateHeight(codeMirror);
+	</script>
+</body>
+</html>

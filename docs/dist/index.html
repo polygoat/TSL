@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>TSL: Intuitive text scraping language (based on Python)</title>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.5.3/css/foundation.min.css">
+	<link href="https://fonts.googleapis.com/css?family=Nunito&display=swap" rel="stylesheet">
+	<style>
+		body {
+			padding-top: 80px;
+			font-family: Nunito, Arial, sans-serif;
+		}
+		h1, h2, h3, h4, h5, h6,
+		.codemirror, pre {
+			font-family: Nunito, Arial, sans-serif;
+			width: 100%;
+			min-height: calc(100% - 31px);
+		}
+		h1 + h2 {	line-height: 110%;		}
+		h3 		{
+			background: #E7E7E2;
+			padding: 6px 20px;
+			margin-bottom: 0;
+			margin-top: 30px;
+			transition: .4s all;
+		}
+		h3:hover {
+			background: #fff;
+		}
+		h4 {
+		    margin-left: 21px;
+		    font-size: 12pt;
+		    margin-top: 8px;
+		}
+		.split-screen {
+			margin-bottom: 20px;
+			width: 100%;
+		}
+		.split-screen + .split-screen {
+			margin-top: -20px;
+		}
+		h3 + .split-screen 	{	margin-top: 6px;		}
+		pre 				{ 	margin-bottom: 6px; 	}
+		.grid-container 	{	
+			padding: 0 10%;			
+			padding-bottom: 120px;
+		}
+		.split-screen pre 	{	border-right: 1px solid #fff;	}
+		hr {
+			border-style: dashed;
+			width: 100%;
+		}
+		code {
+			border: none;
+			border-radius: 3px;
+		}
+		label {
+			position: absolute;
+			margin-left: 10px;
+			min-width: 120px;
+			padding: 0 16px;
+			color: #7A7A7A;
+			z-index: 9;
+		}
+		label span::before {
+			content: ''; /* To generate the box */
+			position: absolute;
+			top: 0; right: 0; bottom: 0; left: 0;
+			display: block;
+			z-index: -1;
+			background: #262626;
+			transform: perspective(4px) rotateX(1deg);
+		}
+		pre code {
+			padding: 0;
+			border: 0;
+		}
+		h3 code {
+			background: #fff;
+			padding-bottom: 3px;
+			opacity: .6;
+			transition: 400ms all;
+		}
+		h3:hover code {
+			opacity: 1;
+		}
+		.parameter.optional {
+			opacity: .3;
+			border: 1px dotted #000;
+		}
+		.filelist {
+			height: calc(100% - 31px);
+			width: 100%;
+			border-right: 2px solid lightgray;
+			border-top: 1px solid lightgray;
+		}
+		.filelist-tab {
+			color: darkgray;	
+			border-bottom: 1px solid #fff;
+		}
+		.filelist-tab span::before {
+			background-color: #fff;
+			border: 1px solid lightgray;
+			border-bottom: 1px solid #fff;
+		}
+	</style>
+</head>
+<body>
+	<div class="grid-container">
+		<div class="grid-x grid-margin-x">
+			<h1 id="tsl">TSL</h1>
+	<h2 id="intuitive-text-scraping-language-based-on-python">Intuitive <strong>t</strong>ext <strong>s</strong>craping <strong>l</strong>anguage (based on Python)</h2>
+	<p><em>TSL is a language in pseudo-code style for processing of text files with Regular Expressions and very basic logic. Behold, <strong>data scientists</strong>, <strong>wranglers</strong>, <strong>scrapers</strong>, and <strong>miners</strong> of the world: no further need for endless Python scripts!</em></p>
+	<hr />
+	<div class="grid-x split-screen">
+	<ul>
+	<li><a href="#key-features">Key Features</a></li>
+	<li><a href="#setup">Setup</a></li>
+	<li><a href="#how-it-works">How it works</a></li>
+	<li><a href="#data">Data</a></li>
+	<li><a href="#loops">Loops</a></li>
+	</ul>
+	<p><strong>Available Commands:</strong></p>
+	<ol>
+	<li><a href="#1-file-system-operations">File System Operations</a></li>
+	<li><a href="#2-selections">Selections</a></li>
+	<li><a href="#3-debugging-calculations">Debugging &amp; Calculations</a></li>
+	<li><a href="#4-manipulation">Manipulation</a></li>
+	<li><a href="#5-memory">Memory</a></li>
+	<li><a href="#6-flow">Flow</a></li>
+	</ol>
+	</div>
+	<hr />
+	<h2 id="key-features">Key Features</h2>
+	<h3 id="1-super-easy-file-operations-with-regex">1. Super-easy file operations with RegEx:</h3>
+	<pre><code class="language-tsl"><iframe id="example_436" class="codemirror" src="codemirror/index.html?id=example_436&code=%7B%0A%20%20%20%20%23%20collect%20all%20links%0A%20%20%20%20in%20path%2Fto%2Fposts.csv%0A%20%20%20%20%20%20%20%20%23%20files%20ending%20in%20csv%20will%20automatically%20be%20split%20by%20semicolon%0A%20%20%20%20%20%20%20%20split%20as%20columns%0A%20%20%20%20%20%20%20%20find%20all%20https%3F%3A%2F%2F%5B%5Cw%5C.%5C-0-9%5D%2B%0A%20%20%20%20%20%20%20%20take%20results%20as%20links%0A%20%20%20%20%20%20%20%20log%20%5Bcolumns%5D%0A%20%20%20%20%20%20%20%20log%20%5Blinks%5D%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="2-create-collections-on-the-fly">2. Create collections on the fly:</h3>
+	<pre><code class="language-tsl"><iframe id="example_437" class="codemirror" src="codemirror/index.html?id=example_437&code=%7B%0A%20%20%20%20split%20%22these%20are%20some%20words%22%20by%20space%20as%20%5Bentities%5D%0A%20%20%20%20for%20every%20%5Bentity%5D%0A%20%20%20%20%20%20%20%20%23%20inside%20the%20loop%20we%20access%20%22entity%22%20as%20single%20item%20of%20%22entities%22%0A%20%20%20%20%20%20%20%20count%20%5Bentity%5D%20as%20letter-count%0A%20%20%20%20---%0A%20%20%20%20%23%20and%20vice%20versa%20access%20a%20new%20collection%20of%20%22letterCount%22s%20after%20the%20loop%0A%20%20%20%20log%20%5Bletter-counts%5D%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<pre><code class="language-plain"><label><span>output</span></label><br/><iframe id="example_438" class="codemirror" src="codemirror/index.html?id=example_438&code=%20letter-counts%3A%20%5B5%2C%203%2C%204%2C%205%5D%0A&lang=plain" frameborder="0"></iframe></code></pre>
+	<h3 id="3-cherry-pick">3. Cherry-pick!</h3>
+	<div class="grid-x split-screen">
+	<pre><code class="language-tsl"><label><span>Source children.tsl</span></label><br/><iframe id="example_439" class="codemirror" src="codemirror/index.html?id=example_439&code=%7B%0A%20%20%20%20in%20%2Fcontacts%2Fchildnames.tsv%0A%20%20%20%20%20%20%20%20take%20lines%20as%20children%0A%20%20%20%20%20%20%20%20log%20%5Bchildren%5D%0A%20%20%20%20%20%20%20%20for%20every%20other%20%5Bchild%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20split%20%5Bchild%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20select%202nd%20as%20first-name%0A%20%20%20%20%20%20%20%20---%0A%20%20%20%20%20%20%20%20log%20%22%20%22%0A%20%20%20%20%20%20%20%20log%20%5Bfirst-names%5D%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<pre><code class="language-plain"><label><span>output</span></label><br/><iframe id="example_440" class="codemirror" src="codemirror/index.html?id=example_440&code=children%3A%20%5B%0A%20%20%20%20%2250%20%20%20Andrea%20%20%20%20A%22%2C%0A%20%20%20%20%2251%20%20%20Beatrice%20%20B%22%2C%0A%20%20%20%20%2262%20%20%20Caroline%20%20C%22%2C%0A%20%20%20%20%2282%20%20%20G%C3%BCnther%20%20%20G%22%0A%5D%0A%0Afirst-names%3A%20%5B%0A%20%20%20%20%22Andrea%22%2C%0A%20%20%20%20%22Caroline%22%0A%5D%0A&lang=plain" frameborder="0"></iframe></code></pre>
+	</div>
+	<hr />
+	<h2 id="setup">Setup</h2>
+	<p>Drop the folder in your Sublime Text's <strong>package directory</strong>. Files with the extension <code>.tsl</code> will automatically get <strong>syntax-highlighting</strong> and a <strong>build system</strong> to run them. Force building by choosing <strong><code>Tools &gt; Build System &gt; TSL</code></strong> from the ST3 menu.</p>
+	<hr />
+	<h2 id="how-it-works">How it works</h2>
+	<p>TSL runs through the script line by line and executes corresponding Python code in the background. File handling, complex data types, and templating are built-in for rapid prototyping. Every line (called <strong>directive</strong>) starts with a command followed by a space and space-separated arguments.
+	Most commands support optional <strong>clauses</strong> like <code>as...</code> (storage variable) or <code>in...</code> (file handle) to supply further context.</p>
+	<pre><code class="language-tsl"><label><span>Try it out!</span></label><br/><iframe id="example_441" class="codemirror" src="codemirror/index.html?id=example_441&code=%7B%0A%20%20%20%20log%20%22Hello%20world!%22%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<pre><code class="language-plain"><label><span>output</span></label><br/><iframe id="example_442" class="codemirror" src="codemirror/index.html?id=example_442&code=%0A%20Hello%20world!%0A%0A&lang=plain" frameborder="0"></iframe></code></pre>
+	<hr />
+	<h2 id="data">Data</h2>
+	<p>A command's inputs and outputs can be <strong>strings</strong> or <strong>collections of strings</strong>.</p>
+	<p>TSL iterates over collections and applies the command to each element. The commands <code>as</code>, <code>remember</code>, <code>split</code>, and <code>for</code> change the context to the provided variable. This means you can omit <code>as</code> clauses in the following commands, always automatically referring to the context. Use square brackets to reference variables created using e.g. an <code>as</code> clause. <code>log something</code> will log the string &quot;something&quot;, while <code>log [something]</code> will log the content of the variable called <em>something</em>.</p>
+	<p><strong>Templates</strong> (variables) are enclosed in square brackets and can be either passed as reference or appear in <em>quoted strings</em>, <em>file paths</em>, and even within <em>regular expressions</em>:</p>
+	<pre><code class="language-tsl"><iframe id="example_443" class="codemirror" src="codemirror/index.html?id=example_443&code=%7B%0A%20%20%20%20in%20stats%2Fmilestones.tsv%0A%20%20%20%20%20%20%20%20take%20lines%20as%20rows%0A%0A%20%20%20%20%20%20%20%20for%20every%20%5Brow%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20split%20by%20tabs%20as%20column%0A%20%20%20%20%20%20%20%20%20%20%20%20select%20second%20as%20team-name%0A%20%20%20%20%20%20%20%20%20%20%20%20select%203rd%20as%20task%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20find%20all%20%5Bteam-name%5D%5C%3A(.*)%20in%20%5Btask%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20take%20results%0A%0A%20%20%20%20%20%20%20%20%20%20%20%20in%20%22stats%2F%5Bteam-name%5D.txt%22%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20write%20%5Btask%5D%0A%20%20%20%20%20%20%20%20---%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<p>If the variables can not be found, the template tags remain untouched, including square brackets. This allows us to easily mix them with square brackets in regular expressions.</p>
+	<hr />
+	<h2 id="loops">Loops</h2>
+	<p>When working inside <code>for</code> loops, TSL automagically uses a <strong>singular version</strong> of your variable to step through the entries of your collection.</p>
+	<pre><code class="language-tsl"><label><span>extract-names.tsl</span></label><br/><iframe id="example_444" class="codemirror" src="codemirror/index.html?id=example_444&code=%7B%0A%20%20%20%20in%20%2Fcontacts%2Fchildnames.txt%0A%20%20%20%20%20%20%20%20take%20lines%20as%20children%0A%20%20%20%20%20%20%20%20log%20%5Bchildren%5D%0A%20%20%20%20%20%20%20%20for%20every%20%5Bchild%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20split%20by%20tab%0A%20%20%20%20%20%20%20%20%20%20%20%20select%202nd%20as%20first-name%0A%20%20%20%20%20%20%20%20---%0A%20%20%20%20log%20%5Bfirst-names%5D%0A%7D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<p>Variables created during loops will automatically be appended to a collection named using the plural form. In the example above, the creation of <code>first-name</code> <strong>automatically populates</strong> a collection called <code>first-names</code>. Irregular plurals like child -&gt; children or foot -&gt; feet have basic support. If the plural fails try compound words for better inflection, e.g. <code>species-collection</code> instead of <code>species</code>.</p>
+	<hr />
+	<h1 id="commands">Commands</h1>
+	<h2 id="1-file-system-operations">1. File &amp; system operations</h2>
+	<h3 id="bash-command-as-variable"><strong>bash</strong> <em><code>&lt;command&gt;</code></em> as <em><code>&lt;variable&gt;</code></em></h3>
+	<h4 id="runs-a-bash-command-and-saves-the-returned-output-to-a-variable">Runs a bash command and saves the returned output to a variable.</h4>
+	<pre><code class="language-tsl"><iframe id="example_445" class="codemirror" src="codemirror/index.html?id=example_445&code=%20%20%20%20bash%20git%20branch%20as%20branches%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="empty-filepath"><strong>empty</strong> <em><code class="parameter optional" title="(optional)">&lt;filepath&gt;</code></em></h3>
+	<h4 id="deletes-all-content-from-the-last-file-opened-with-the-in-command">Deletes all content from the last file opened with the <code>in</code> command.</h4>
+	<pre><code class="language-tsl"><iframe id="example_446" class="codemirror" src="codemirror/index.html?id=example_446&code=%20%20%20%20in%20wordbag.txt%0A%20%20%20%20%20%20%20%20empty%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="in-pathtotextfiletxt"><strong>in</strong> <em><code>&lt;path/to/textfile.txt&gt;</code></em></h3>
+	<h4 id="opens-up-a-file-and-reads-all-its-lines-you-can-log-the-lines-using-log-lines-all-future-file-operations-are-refering-to-this-one-until-your-next-in-statement-youll-usually-see-this-followed-by-a-take-or-find-all-command">Opens up a file and reads all its lines. You can log the lines using <code>log [lines]</code>. All future file operations are refering to this one until your next &quot;in&quot; statement. You'll usually see this followed by a <code>take</code> or <code>find all</code> command</h4>
+	<pre><code class="language-tsl"><iframe id="example_447" class="codemirror" src="codemirror/index.html?id=example_447&code=%20%20%20%20in%20stats%2F01092019.txt%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="in-pathtofolder"><strong>in</strong> <em><code>&lt;path/to/folder&gt;</code></em></h3>
+	<h4 id="if-it-doesnt-exist-the-nested-directory-structure-will-be-created-the-supplied-path-will-be-used-as-context-for-future-operations">If it doesn't exist, the (nested) directory structure will be created. The supplied path will be used as context for future operations.</h4>
+	<pre><code class="language-tsl"><iframe id="example_448" class="codemirror" src="codemirror/index.html?id=example_448&code=%20%20%20%20in%20%22%2FSublime%20Text%2FPackages%22%0A%20%20%20%20%20%20%20%20count%20files%20as%20fileCount%0A%20%20%20%20%20%20%20%20log%20%5BfileCount%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="save-as-filepath"><strong>save</strong> <em><code class="parameter optional" title="(optional)">as &lt;filepath&gt;</code></em></h3>
+	<h4 id="saves-the-latest-collection-in-the-given-filename">Saves the latest collection in the given filename.</h4>
+	<pre><code class="language-tsl"><iframe id="example_449" class="codemirror" src="codemirror/index.html?id=example_449&code=%20%20%20%20save%20as%20runner%2Fcleaned_userinputs.txt%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="write-variable"><strong>write</strong> <em><code class="parameter optional" title="(optional)">&lt;variable&gt;</code></em></h3>
+	<h4 id="writes-given-variable-or-the-results-of-the-last-find-all-into-the-last-file-opened-with-in">Writes given variable (or the results of the last <code>find all</code>) into the last file opened with <code>in</code></h4>
+	<pre><code class="language-tsl"><iframe id="example_450" class="codemirror" src="codemirror/index.html?id=example_450&code=%20%20%20%20write%20%5BuserIds%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="add-stringvariable-to-filepath"><strong>add</strong> <em><code>&lt;string/variable&gt;</code></em> <em><code class="parameter optional" title="(optional)">to &lt;filepath&gt;</code></em></h3>
+	<h4 id="appends-content-to-a-file">Appends content to a file</h4>
+	<pre><code class="language-tsl"><iframe id="example_451" class="codemirror" src="codemirror/index.html?id=example_451&code=%20%20%20%20add%20%5Blibraries%5D%20to%20libs.txt%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<hr />
+	<h2 id="2-selections">2. Selections</h2>
+	<h3 id="select-nth-of-input"><strong>select</strong> <em>&lt;n&gt;th</em> <em><code class="parameter optional" title="(optional)">of &lt;input&gt;</code></em></h3>
+	<h4 id="selects-a-specific-item-of-a-collection-given-its-index">Selects a specific item of a collection, given its index.</h4>
+	<pre><code class="language-tsl"><iframe id="example_452" class="codemirror" src="codemirror/index.html?id=example_452&code=%20%20%20%20in%20bigrams.txt%20%20%20%0A%20%20%20%20%20%20%20%20select%204th%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="select-words-of-input-as-output"><strong>select</strong> <em>words</em> <em><code class="parameter optional" title="(optional)">of &lt;input&gt;</code></em> <em><code class="parameter optional" title="(optional)">as &lt;output&gt;</code></em></h3>
+	<h4 id="selects-all-words-found-in-the-last-opened-file">Selects all words found in the last opened file.</h4>
+	<pre><code class="language-tsl"><iframe id="example_453" class="codemirror" src="codemirror/index.html?id=example_453&code=%20%20%20%20in%20utterances.txt%20%20%20%0A%20%20%20%20%20%20%20%20select%20words%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="select-from-stringintregex-to-stringintregex"><strong>select</strong> <em><code class="parameter optional" title="(optional)">from &lt;string/int/RegEx&gt;</code></em> <em><code class="parameter optional" title="(optional)">to &lt;string/int/RegEx&gt;</code></em></h3>
+	<h4 id="selects-the-range-from-the-indicated-stringregexnumber-until-the-indicated-string-or-regular-expression-or-number-note-that-we-start-counting-with-1-to-keep-it-natural">Selects the range from the indicated string/RegEX/number until the indicated string or regular expression or number. Note that we start counting with 1 to keep it natural.</h4>
+	<pre><code class="language-tsl"><iframe id="example_454" class="codemirror" src="codemirror/index.html?id=example_454&code=%20%20%20%20select%20from%201%20to%20%22%3B%22%0A%20%20%20%20select%20from%20%5Cs%0A%20%20%20%20select%20to%20%5C.%5Ba-z%5D%7B3%7D%24%0A%20%20%20%20select%20two%20of%20%5Bbigrams%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<hr />
+	<h2 id="3-debugging-calculations">3. Debugging &amp; calculations</h2>
+	<h3 id="be-property"><strong>be</strong> <em><code>&lt;property&gt;</code></em></h3>
+	<h4 id="sets-one-of-the-following-properties-of-tsl-to-true">Sets one of the following properties of TSL to true:</h4>
+	<h4 id="verbose-or-active"><code>verbose</code> or <code>active</code></h4>
+	<h3 id="calculate-operation-as-variable"><strong>calculate</strong> <em><code>&lt;operation&gt;</code></em> as <em><code>&lt;variable&gt;</code></em></h3>
+	<h4 id="stores-the-result-of-a-mathematical-calculation-and-stores-it-in-a-variable">Stores the result of a mathematical calculation and stores it in a variable.</h4>
+	<pre><code class="language-tsl"><iframe id="example_455" class="codemirror" src="codemirror/index.html?id=example_455&code=%20%20%20%20calculate%20(5%20*%204)%20%2F%202%20as%20ratio%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="log-variablestring"><strong>log</strong> <em><code>&lt;variable/string&gt;</code></em></h3>
+	<h4 id="prints-to-the-console-use-strings-with-template-tags-eg-here-is-varname-for-variables">Prints to the console. Use strings with template tags (e.g. &quot;here is: [varName]&quot;) for variables.</h4>
+	<h3 id="count-variable-as-countvariable"><strong>count</strong> <em><code>&lt;variable&gt;</code></em> as <em><code>&lt;countVariable&gt;</code></em></h3>
+	<h4 id="stores-the-count-of-items-in-a-collection-or-characters-in-a-string">Stores the count of items in a collection or characters in a string.</h4>
+	<pre><code class="language-tsl"><iframe id="example_456" class="codemirror" src="codemirror/index.html?id=example_456&code=%20%20%20%20count%20%5Bentries-per-day%5D%20as%20frequency%0A%20%20%20%20log%20%5Bfrequency%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="count-filesfolders-in-pathtodir-as-countvariable"><strong>count</strong> <em><code>&lt;files/folders&gt;</code></em> <em><code class="parameter optional" title="(optional)">in &lt;path/to/dir&gt;</code></em> as <em><code>&lt;countVariable&gt;</code></em></h3>
+	<h4 id="stores-the-count-of-files-or-folders-in-a-directory">Stores the count of files or folders in a directory.</h4>
+	<pre><code class="language-tsl"><iframe id="example_457" class="codemirror" src="codemirror/index.html?id=example_457&code=%20%20%20%20count%20files%20in%20%22C%3A%5CWindows%22%20as%20system-files%0A%20%20%20%20log%20%22Exactly%20%5Bsystem-files%5D%20system%20files%20found.%22%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<hr />
+	<h2 id="4-manipulation">4. Manipulation</h2>
+	<h3 id="change-varname-to-formula"><strong>change</strong> <em><code>&lt;varName&gt;</code></em> to <em><code>&lt;formula&gt;</code></em></h3>
+	<h4 id="iterates-over-a-collection-and-changes-all-entries-according-to-the-template-tag">Iterates over a collection and changes all entries according to the template tag.</h4>
+	<pre><code class="language-tsl"><iframe id="example_458" class="codemirror" src="codemirror/index.html?id=example_458&code=%20%20%20%20change%20%5Bsalute%5D%20to%20%22Hi%2C%20%5Bsalute%5D%20%23%5Bi%5D%22%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<p><em>will e.g. change &quot;my name is Dan&quot; to &quot;Hi, my name is Dan #1&quot;</em></p>
+	<h3 id="combine-setname-with-setname-as-varname"><strong>combine</strong> <em><code>&lt;setName&gt;</code></em> with <em><code>&lt;setName&gt;</code></em> as <em><code>&lt;varName&gt;</code></em></h3>
+	<h4 id="merges-two-sets-and-stores-it-in-a-new-variable">Merges two sets and stores it in a new variable.</h4>
+	<pre><code class="language-tsl"><iframe id="example_459" class="codemirror" src="codemirror/index.html?id=example_459&code=%20%20%20%20combine%20%5Bvowels%5D%20with%20%5Bconsonants%5D%20as%20letters%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="find-stringregex-in-varname-as-varname"><strong>find</strong> <em><code>&lt;string/RegEx&gt;</code></em> <em><code class="parameter optional" title="(optional)">in &lt;varName&gt;</code></em> <em><code class="parameter optional" title="(optional)">as &lt;varName&gt;</code></em></h3>
+	<h4 id="finds-all-occurrences-of-a-string-or-regular-expression-in-the-lines-of-the-currently-open-file-or-a-stored-collection-the-results-of-this-search-are-automatically-stored-in-a-variable-found">Finds all occurrences of a string or regular expression in the lines of the currently open file or a stored collection. The results of this search are automatically stored in a variable <code>found</code>.</h4>
+	<pre><code class="language-tsl"><iframe id="example_460" class="codemirror" src="codemirror/index.html?id=example_460&code=%20%20%20%20in%20corpus_de.txt%0A%20%20%20%20%20%20%20%20take%20lines%20as%20utterances%0A%20%20%20%20%20%20%20%20find%20all%20%5Baeiou%5D%2B%20in%20%5Butterances%5D%0A%20%20%20%20%20%20%20%20log%20%5Bfound%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="remove-lines"><strong>remove</strong> lines</h3>
+	<h4 id="removes-the-last-selected-lines-eg-the-ones-found-using-a-find-all">Removes the last selected lines (e.g. the ones found using a <code>find all</code>).</h4>
+	<h3 id="replace-stringregex-by-string-in-variable"><strong>replace</strong> <em><code>&lt;string/RegEx&gt;</code></em> by <em><code>&lt;string&gt;</code></em> <em><code class="parameter optional" title="(optional)">in &lt;variable&gt;</code></em></h3>
+	<h4 id="replaces-given-string-or-regular-expression-by-another-string-optionally-in-a-particular-collection">Replaces given string or regular expression by another string, optionally in a particular collection.</h4>
+	<pre><code class="language-tsl"><iframe id="example_461" class="codemirror" src="codemirror/index.html?id=example_461&code=%20%20%20%20replace%20%5CW%2B%20by%20%22_%22%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="sort-varname"><strong>sort</strong> <code class="parameter optional" title="(optional)">&lt;varName&gt;</code></h3>
+	<h4 id="sorts-either-the-supplied-or-last-referenced-collection-alphanumerically-in-ascending-order">Sorts either the supplied or last referenced collection alphanumerically (in ascending order).</h4>
+	<h3 id="sort-varname-by-reference"><strong>sort</strong> <em><code class="parameter optional" title="(optional)">&lt;varName&gt;</code></em> by <em><code class="parameter optional" title="(optional)">&lt;reference&gt;</code></em></h3>
+	<h4 id="sorts-either-the-supplied-collection-by-the-alphanumerical-ascending-order-of-reference-collection">Sorts either the supplied collection by the alphanumerical ascending order of reference collection.</h4>
+	<h3 id="split-stringregex-by-delimiter-as-variable"><strong>split</strong> <em><code>&lt;string/RegEx&gt;</code></em> by <em><code>&lt;delimiter&gt;</code></em> as <em><code>&lt;variable&gt;</code></em></h3>
+	<h4 id="splits-a-string-into-a-collection-using-delimiter-the-delimiter-can-be-any-combination-of-characters-or-one-of-the-following-keywords-brackets-commas-dots-hyphens-lines-parens-periods-semicolons-spaces-tabs-underscores">Splits a string into a collection using delimiter. The delimiter can be any combination of characters or one of the following keywords: <code>brackets</code>, <code>commas</code>, <code>dots</code>, <code>hyphens</code>, <code>lines</code>, <code>parens</code>, <code>periods</code>, <code>semicolons</code>, <code>spaces</code>, <code>tabs</code>, <code>underscores</code>.</h4>
+	<pre><code class="language-tsl"><iframe id="example_462" class="codemirror" src="codemirror/index.html?id=example_462&code=%20%20%20%20split%20apples%3Bbananas%3Boranges%20by%20semicolons%20as%20fruits%0A%20%20%20%20log%20%5Bfruits%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="unique-varname"><strong>unique</strong> <em><code class="parameter optional" title="(optional)">&lt;varName&gt;</code></em></h3>
+	<h4 id="removes-all-duplicate-entries-from-given-collection">Removes all duplicate entries from given collection.</h4>
+	<h3 id="unique-lines"><strong>unique</strong> lines</h3>
+	<h4 id="removes-all-duplicate-lines-from-the-last-referenced-collection">Removes all duplicate lines from the last referenced collection.</h4>
+	<hr />
+	<h2 id="5-memory">5. Memory</h2>
+	<h3 id="remember-stringvariable-as-variablename"><strong>remember</strong> <em><code>&lt;string/variable&gt;</code></em> as <em><code>&lt;variableName&gt;</code></em></h3>
+	<h4 id="stores-a-string-or-variable-in-a-new-variable">Stores a string or variable in a new variable.</h4>
+	<h3 id="take-linesresultsfilesfolders-as-name"><strong>take</strong> <em><code>&lt;lines/results/files/folders&gt;</code></em> <em><code class="parameter optional" title="(optional)">as &lt;name&gt;</code></em></h3>
+	<h4 id="changes-the-selected-collection-to-whole-lines-take-lines-as-results-of-a-find-all-directive-or-to-the-files-found-in-a-folder-specified-with-a-preceding-in-folderpath-directive">Changes the selected collection to whole lines (<code>take lines as ...</code>), results of a <code>find all</code> directive, or to the files found in a folder specified with a preceding <code>in &lt;folderPath&gt;</code> directive.</h4>
+	<pre><code class="language-tsl"><iframe id="example_463" class="codemirror" src="codemirror/index.html?id=example_463&code=%20%20%20%20in%20source.txt%0A%20%20%20%20%20%20%20%20find%20all%20%3C%5B%5E%3E%5D%2B%3E%0A%20%20%20%20%20%20%20%20take%20lines%20as%20htmlLines%0A%20%20%20%20%20%20%20%20log%20%5BhtmlLines%5D%0A%20%20%20%20%0A%20%20%20%20in%20libraries%2Fde%0A%20%20%20%20%20%20%20%20take%20files%20as%20germanLibs%0A%20%20%20%20%20%20%20%20log%20%5BgermanLibs%5D%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<hr />
+	<h2 id="6-flow">6. Flow</h2>
+	<h3 id="for-every-variable-newline-"><strong>for</strong> <em><code class="parameter optional" title="(optional)">every</code></em> <em><code>&lt;variable&gt;</code></em> <br> <strong>---</strong></h3>
+	<h4 id="loops-through-a-collection-populating-the-variable-i-with-the-current-index-use-the-singular-form-here-to-loop-through-a-collection-books-book-babies-baby">Loops through a collection, populating the variable <code>i</code> with the current index. Use the singular form here to loop through a collection (books -&gt; book, babies -&gt; baby).</h4>
+	<h4 id="if-a-collection-is-empty-the-for-loop-is-skipped-this-is-useful-to-create-conditional-flows">If a collection is empty, the for-loop is skipped. This is useful to create conditional flows.</h4>
+	<h4 id="always-terminate-a-loop-with-three-consecutive-hyphens-in-a-separte-line">! Always terminate a loop with three consecutive hyphens in a separte line.</h4>
+	<pre><code class="language-tsl"><iframe id="example_464" class="codemirror" src="codemirror/index.html?id=example_464&code=%20%20%20%20in%20corpus.txt%0A%20%20%20%20%20%20%20%20find%20all%20%5B%5E%5Cb%5D%2B%5Cb%5B%5E%5Cb%5D%2B%20as%20bigrams%0A%20%20%20%20%20%20%20%20for%20every%20%5Bbigram%5D%0A%20%20%20%20%20%20%20%20%20%20%20%20log%20%22%23%5Bi%5D%3A%20%5Bbigram%5D%22%0A%20%20%20%20%20%20%20%20---%0A&lang=tsl" frameborder="0"></iframe></code></pre>
+	<h3 id="run-pathtoscripttsl"><strong>run</strong> <em><code>&lt;path/to/script.tsl&gt;</code></em></h3>
+	<h4 id="runs-another-tsl-file-the-external-tsl-file-will-receive-the-same-scope-as-inlined-code">Runs another TSL file. The external TSL file will receive the same scope as inlined code.</h4>
+		</div>
+	</div>
+	<script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/foundation/6.5.3/js/foundation.min.js"></script>
+	<script>
+		const debounce = (func, delay) => {
+		  let inDebounce;
+		  return function() {
+		    const context = this;
+		    const args = arguments;
+		    clearTimeout(inDebounce);
+		    inDebounce = setTimeout(() => func.apply(context, args), delay);
+		  }
+		}
+
+		const reloadCode = debounce(function (params, $iframe) {
+			var $sibling = $iframe.parentsUntil('pre').parent().next('pre');
+			if($sibling.length) {
+				var label = $sibling.find('label span').text().toLowerCase();
+				if(label === 'output') {
+					jQuery.get('http://localhost:8080', { code: params.code }, function(data) {
+						var $output = $sibling.find('iframe');
+						$output.attr('src', 'codemirror/index.html?id=' + $output[0].id + '&lang=plain&code=' + encodeURIComponent($.trim(data)));
+					});
+				}
+			}
+		}, 800);
+
+		jQuery(function($){
+			$(window)
+				.on('message', function(event, data){
+					var params = event.originalEvent.data;
+					var $iframe = $('#' + params.id);
+					$iframe.height(params.height);
+					reloadCode(params, $iframe);
+				});
+			$('.split-screen').children().addClass('cell large-auto');
+		});
+	</script>
+	<script>
+		document.write('<script src="http://' + (location.host || 'localhost').split(':')[0] + ':35729/livereload.js?snipver=1"></' + 'script>');
+	</script>
+</body>
+</html>
