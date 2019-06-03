@@ -1,3 +1,0 @@
-[
-	{ "keys": ["alt+ctrl+t"], "command": "show_panel", "args": {"panel": "output.tsl"} }
-]
