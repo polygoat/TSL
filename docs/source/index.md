@@ -109,6 +109,17 @@ Most commands support optional **clauses** like `as...` (storage variable) or `i
 
 ```
 
+### Building blocks of TSL
+| type | description |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| directive       | every line represents a directive, meaning a command (with inputs) that leads to one separate action. |
+| commands        | every directive starts with a command followed by its parameters and clauses. One of the [82 commands]. |
+| parameters      | most commands have parameters that are used as input for processing. |
+| fillwords       | fillwords only serve to make code more legible. They will be ignored for processing. E.g.: in `combine x with y`, "with" is the fillword. |
+| clauses         | clauses are optional combos of fillword+parameter(s) that can be placed anywhere in a directive. |
+| quantifiers     | when working with collections use quantifiers to pre-filter them. E.g.: `for every odd [letter] ...` |
+| references      | words in square brackets are resolved to the value they are pointing to. |
+
 ---
 ## Data
 Most commands will work on **strings** or **collections of strings**, but TSL supports more datatypes:
@@ -123,7 +134,7 @@ Most commands will work on **strings** or **collections of strings**, but TSL su
 
 TSL iterates over collections and applies the command to each element. The commands `as`, `remember`, `split`, and `for` change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context. Use square brackets to reference variables created using e.g. an `as` clause. `log something` will log the string "something", while `log [something]` will log the content of the variable called _something_.
 
-**Templates** (variables) are enclosed in square brackets and can be either passed as reference or appear in _quoted strings_, _file paths_, and even within _regular expressions_:
+**Templates** (references) are enclosed in square brackets and can be either passed as direct reference or appear in _quoted strings_, _file paths_, and even within _regular expressions_:
 ```tsl
 {
     in stats/milestones.tsv
