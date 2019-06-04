@@ -111,7 +111,15 @@ Most commands support optional **clauses** like `as...` (storage variable) or `i
 
 ---
 ## Data
-A command's inputs and outputs can be **strings** or **collections of strings**.
+Most commands will work on **strings** or **collections of strings**, but TSL supports more datatypes:
+
+| datatype   | contains                               | examples           |
+| ---------- | -------------------------------------- | ------------------ |
+| literals   | quoted strings, may contain references | "I found no [concept]"                         |
+| numerals   | ordinals, numbers | 1st, second, 3, four                    |
+| regex      | unquoted, may contain references | [^\s]*[user] |       
+| collection | array of literals, numerals, or regex | (can only be created thru generation) |                               
+| references | variable references | [user] |
 
 TSL iterates over collections and applies the command to each element. The commands `as`, `remember`, `split`, and `for` change the context to the provided variable. This means you can omit `as` clauses in the following commands, always automatically referring to the context. Use square brackets to reference variables created using e.g. an `as` clause. `log something` will log the string "something", while `log [something]` will log the content of the variable called _something_.
 

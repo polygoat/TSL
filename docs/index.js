@@ -86,7 +86,7 @@ md.renderer.rules.hr = (tokens, idx, options) => {
 
 function compileDocs(filename) {
 	if(filename) {
-		filename = filename.split(/[\\\/]+/g).pop();
+		filename = filename.split(path.sep).pop();
 		filename && console.log('	' + filename + ' changed. Recompiling...');
 	}
 
@@ -110,7 +110,8 @@ if(process.argv[2] === 'livereload') {
 	const livereload = require('livereload');
 	const lrserver = livereload.createServer({
 		extraExts: ['md','.md'],
-		delay: 1000
+		delay: 1000,
+		port: 35730
 	}, compileDocs);
 	
 	lrserver.watch(__dirname + "/source").on('change', compileDocs);
