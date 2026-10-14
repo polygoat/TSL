@@ -4,9 +4,9 @@ import re
 import json
 import math
 import subprocess
-from .glob2 import glob
-from TSL.TSLCore import TSLCore, TSLCollection
-from TSL.TSLHelpers import TSLData, TSLArgs, TSLArg, TSLQuantifiers, TSLUtils
+from ..glob2 import glob
+from .TSLCore import TSLCore, TSLCollection
+from .TSLHelpers import TSLData, TSLArgs, TSLArg, TSLQuantifiers, TSLUtils
 
 class TSLEngine(TSLCore):
 	currentFile = ''

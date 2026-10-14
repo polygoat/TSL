@@ -6,8 +6,8 @@ import io
 import gc
 import re
 import time
-from TSL.TSLEngine import *
-from TSL.TSLCore import *
+from .tsl_core.TSLEngine import *
+from .tsl_core.TSLCore import *
 
 class TslCompileCommand(sublime_plugin.WindowCommand):
 	panel = False
