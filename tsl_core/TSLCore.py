@@ -3,8 +3,8 @@ import os
 import re
 import hashlib
 import sys
-from .glob2 import glob
-from TSL.TSLHelpers import *
+from ..glob2 import glob
+from .TSLHelpers import *
 
 class TSLLogger:
 	def log(self, whatever, ignore=''):
